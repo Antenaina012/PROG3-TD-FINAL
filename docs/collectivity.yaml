@@ -1,39 +1,45 @@
 openapi: 3.0.3
 info:
   title: Madagascar Agricultural Collectivities Federation API
-  description: >
-    REST API for managing the National Federation of Agricultural Collectivities in Madagascar.
-    This specification covers:
-    - **A**: Collectivity Opening & Management
-    - **B**: Member Admission, Transfers, and Resignations
-    - **C**: Dues and Payments
-    - **D**: Treasury and Bank Accounts
-    - **E**: Collectivity and Federation Activities
-    - **F**: Attendance Tracking
-    - **G**: Statistics and Reporting
-  version: 1.0.0
+  description: |
+    REST API for managing the national federation of agricultural collectivities in Madagascar.
+    
+    This version includes:
+    - **A**: Opening of new collectivities
+    - **B**: Member admission and management (including B-2 update from 04/21/2026)
+    - **C**: Dues and payments
+    - **D**: Treasury and cash flow status
+    - **E**: Collectivity and federation activities
+    - **F**: Attendance tracking
+    - **G**: Collectivity statistics
+    - **H**: Federation-wide statistics (Global reports)
+  version: 1.1.0
   contact:
     name: Agricultural Federation of Madagascar
 
-servers:
-  - url: https://api.agri-federation.mg/v1
-    description: Production Server
-
 tags:
   - name: Collectivities
-    description: Operations related to agricultural groups (Functionality A)
+    description: Management of agricultural groups (Functionality A)
   - name: Members
-    description: Member enrollment and lifecycle management (Functionality B)
+    description: Admission and member lifecycle (Functionality B & B-2)
+  - name: Dues
+    description: Membership fees and payments (Functionality C)
   - name: Treasury
-    description: Dues, payments, and bank accounts (Functionalities C & D)
+    description: Accounts and financial status (Functionality D)
   - name: Activities
     description: Event planning and scheduling (Functionality E)
   - name: Attendance
-    description: Presence tracking for events (Functionality F)
+    description: Tracking presence at activities (Functionality F)
   - name: Statistics
-    description: Reports for collectivities and members (Functionality G)
+    description: Collectivity-level reports (Functionality G)
+  - name: Federation Statistics
+    description: Global federation reports (Functionality H)
 
+# ==============================================================================
+# PATHS
+# ==============================================================================
 paths:
+
   # ============================================================
   # A - COLLECTIVITIES
   # ============================================================
@@ -41,6 +47,7 @@ paths:
     get:
       tags: [Collectivities]
       summary: List all collectivities
+      operationId: getCollectivities
       parameters:
         - name: city
           in: query
@@ -52,76 +59,57 @@ paths:
             type: string
       responses:
         '200':
-          description: List of collectivities retrieved
+          description: List of collectivities
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CollectivityResponse'
+                $ref: '#/components/schemas/CollectivityListResponse'
 
     post:
       tags: [Collectivities]
       summary: Request the opening of a new collectivity
-      description: >
-        Conditions: At least 10 members (5 with 6+ months seniority), 
-        mandatory roles filled, and federation authorization required.
+      description: |
+        Conditions:
+        - At least 10 members (5 with 6+ months seniority)
+        - Specific roles filled (President, Treasurer, etc.)
+      operationId: createCollectivity
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CollectivityCreateRequest'
+              $ref: '#/components/schemas/CollectivityCreationRequest'
       responses:
         '201':
           description: Opening request submitted successfully
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-
-  /collectivities/{collectivityId}/authorize:
-    post:
-      tags: [Collectivities]
-      summary: Issue formal opening authorization (Federation only)
-      parameters:
-        - $ref: '#/components/parameters/collectivityId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [isAuthorized]
-              properties:
-                isAuthorized:
-                  type: boolean
-                comment:
-                  type: string
-      responses:
-        '200':
-          description: Authorization status updated
 
   # ============================================================
-  # B - MEMBERS
+  # B - MEMBERS (Updated B-2)
   # ============================================================
   /members:
     post:
       tags: [Members]
       summary: Register a new member
-      description: Requires a sponsor (confirmed member, 90+ days seniority) and 50,000 MGA fee.
+      description: |
+        Conditions (Update B-2):
+        - Minimum 2 confirmed sponsors.
+        - Target collectivity sponsors >= External sponsors.
+        - Payment: 50,000 MGA fee + full annual dues.
+      operationId: registerMember
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MemberCreateRequest'
+              $ref: '#/components/schemas/MemberRegistrationRequest'
       responses:
         '201':
-          description: Member registered
+          description: Member successfully registered
 
   /members/{memberId}/transfer:
-    post:
+    put:
       tags: [Members]
-      summary: Transfer member to another collectivity
+      summary: Transfer to another collectivity
       parameters:
         - $ref: '#/components/parameters/memberId'
       requestBody:
@@ -130,40 +118,21 @@ paths:
           application/json:
             schema:
               type: object
-              required: [newCollectivityId]
+              required: [targetCollectivityId, reason]
               properties:
-                newCollectivityId:
-                  type: string
-                  format: uuid
+                targetCollectivityId: { type: string, format: uuid }
+                reason: { type: string }
       responses:
         '200':
           description: Transfer completed
-
-  /collectivities/{collectivityId}/mandates:
-    post:
-      tags: [Members]
-      summary: Record new annual mandate (Election results)
-      description: A member cannot hold the same specific position more than twice.
-      parameters:
-        - $ref: '#/components/parameters/collectivityId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MandateRequest'
-      responses:
-        '201':
-          description: Mandate recorded
 
   # ============================================================
   # C & D - TREASURY
   # ============================================================
   /collectivities/{collectivityId}/payments:
     post:
-      tags: [Treasury]
-      summary: Record a payment (Dues)
-      description: Recorded by the treasurer. Automatically triggers federation percentage transfer.
+      tags: [Dues]
+      summary: Record a payment (dues)
       parameters:
         - $ref: '#/components/parameters/collectivityId'
       requestBody:
@@ -179,42 +148,26 @@ paths:
   /collectivities/{collectivityId}/accounts:
     get:
       tags: [Treasury]
-      summary: Get financial status (Accounts)
-      description: One cash account only, multiple bank/mobile money accounts allowed.
+      summary: Get accounts and balance
       parameters:
         - $ref: '#/components/parameters/collectivityId'
       responses:
         '200':
-          description: Financial situation
+          description: Financial status
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Account'
+                  $ref: '#/components/schemas/AccountResponse'
 
   # ============================================================
   # E & F - ACTIVITIES & ATTENDANCE
   # ============================================================
-  /activities:
-    post:
-      tags: [Activities]
-      summary: Schedule an activity
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ActivityRequest'
-      responses:
-        '201':
-          description: Activity scheduled
-
   /activities/{activityId}/attendance:
     post:
       tags: [Attendance]
-      summary: Record member attendance
-      description: Recorded by the secretary. Supports external members and excused motives.
+      summary: Record member attendance (Functionality F)
       parameters:
         - $ref: '#/components/parameters/activityId'
       requestBody:
@@ -224,65 +177,49 @@ paths:
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/AttendanceRecord'
+                $ref: '#/components/schemas/AttendanceEntry'
       responses:
         '200':
-          description: Attendance list updated
+          description: Attendance recorded
 
   # ============================================================
-  # G - STATISTICS
+  # G & H - STATISTICS
   # ============================================================
-  /collectivities/{collectivityId}/monthly-report:
+  /collectivities/{collectivityId}/member-stats:
     get:
       tags: [Statistics]
-      summary: Get monthly collectivity report for the federation
-      description: Returns the global attendance rate and total member count.
+      summary: Detailed member statistics (Functionality G)
       parameters:
         - $ref: '#/components/parameters/collectivityId'
-        - name: month
-          in: query
-          required: true
-          schema:
-            type: string
-            pattern: '^[0-9]{4}-[0-9]{2}$' # YYYY-MM
-      responses:
-        '200':
-          description: Monthly report data
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  attendanceRate:
-                    type: number
-                    format: float
-                  totalMembers:
-                    type: integer
-
-  /members/{memberId}/stats:
-    get:
-      tags: [Statistics]
-      summary: Get detailed statistics for an active member
-      description: >
-        Calculates attendance, payments, and potential debt for a given period.
-      parameters:
-        - $ref: '#/components/parameters/memberId'
         - name: startDate
           in: query
           required: true
           schema: { type: string, format: date }
-        - name: endDate
-          in: query
-          required: true
-          schema: { type: string, format: date }
       responses:
         '200':
-          description: Member statistics
+          description: Statistics retrieved
+
+  /federation/reports/global:
+    get:
+      tags: [Federation Statistics]
+      summary: Global Federation Report (Functionality H)
+      description: Recenses attendance rates, payment compliance, and new members globally.
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema: { type: string, enum: [monthly, yearly] }
+      responses:
+        '200':
+          description: Global report generated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MemberStatsResponse'
+                $ref: '#/components/schemas/FederationReportResponse'
 
+# ==============================================================================
+# COMPONENTS
+# ==============================================================================
 components:
   parameters:
     collectivityId:
@@ -301,94 +238,91 @@ components:
       required: true
       schema: { type: string, format: uuid }
 
-  responses:
-    UnprocessableEntity:
-      description: Business logic validation failed.
-    NotFound:
-      description: Resource not found.
-
   schemas:
-    CollectivityCreateRequest:
+    CollectivityCreationRequest:
       type: object
-      required: [name, city, specialty, initialMembers]
+      required: [name, city, specialty, foundingMembers]
       properties:
         name: { type: string }
         city: { type: string }
         specialty: { type: string }
-        initialMembers:
+        foundingMembers:
           type: array
           minItems: 10
           items: { type: string, format: uuid }
 
-    CollectivityResponse:
+    MemberRegistrationRequest:
       type: object
-      properties:
-        id: { type: string, format: uuid }
-        uniqueNumber: { type: string }
-        name: { type: string }
-        city: { type: string }
-        specialty: { type: string }
-        creationDate: { type: string, format: date }
-
-    MemberCreateRequest:
-      type: object
-      required: [firstName, lastName, birthDate, gender, sponsorId]
+      required: [firstName, lastName, sponsors, initialPayment]
       properties:
         firstName: { type: string }
         lastName: { type: string }
         birthDate: { type: string, format: date }
-        gender: { type: string, enum: [Male, Female] }
-        sponsorId: { type: string, format: uuid }
+        sponsors:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            properties:
+              memberId: { type: string, format: uuid }
+              relationship: { type: string }
+        initialPayment:
+          type: object
+          properties:
+            admissionFee: { type: number, example: 50000 }
+            annualDues: { type: number }
 
-    Account:
+    AccountResponse:
       type: object
       properties:
-        type: { type: string, enum: [Cash, Bank, MobileMoney] }
+        type: { type: string, enum: [CASH, BANK, MOBILE_MONEY] }
         balance: { type: number }
-        bankName: { type: string, enum: [BRED, MCB, BMOI, BOA, BGFI, AFG, ACCESS, BAOBAB, SIPEM] }
-        rib: { type: string, pattern: '^[0-9]{23}$' }
+        bankName: { type: string }
 
-    ActivityRequest:
-      type: object
-      required: [title, type, date]
-      properties:
-        title: { type: string }
-        type: { type: string, enum: [General_Assembly, Junior_Training, Exceptional] }
-        date: { type: string, format: date-time }
-
-    AttendanceRecord:
+    AttendanceEntry:
       type: object
       required: [memberId, status]
       properties:
         memberId: { type: string, format: uuid }
-        status: { type: string, enum: [Present, Absent, Excused] }
-        motive: { type: string, description: "Required if status is Excused" }
+        status: { type: string, enum: [PRESENT, ABSENT, EXCUSED] }
+        motive: { type: string }
 
-    MemberStatsResponse:
+    FederationReportResponse:
       type: object
       properties:
-        attendanceRate: { type: number, format: float }
-        totalPaid: { type: number }
-        potentialUnpaid: { type: number }
-
-    MandateRequest:
-      type: object
-      required: [year, roles]
-      properties:
-        year: { type: integer }
-        roles:
+        data:
           type: array
           items:
             type: object
             properties:
-              role: { type: string, enum: [President, Deputy_President, Treasurer, Secretary] }
-              memberId: { type: string, format: uuid }
+              collectivityId: { type: string, format: uuid }
+              attendanceRate: { type: number }
+              complianceRate: { type: number }
+              newMemberCount: { type: integer }
 
     PaymentRequest:
       type: object
-      required: [memberId, amount, method, date]
+      required: [amount, date, method]
       properties:
-        memberId: { type: string, format: uuid }
         amount: { type: number }
-        method: { type: string, enum: [Cash, Bank_Transfer, Mobile_Money] }
         date: { type: string, format: date }
+        method: { type: string, enum: [CASH, TRANSFER, MOBILE_MONEY] }
+
+    CollectivityListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              name: { type: string }
+
+  responses:
+    BadRequest:
+      description: Invalid request.
+    NotFound:
+      description: Resource not found.
+    UnprocessableEntity:
+      description: Business logic error (e.g., insufficient sponsors).
