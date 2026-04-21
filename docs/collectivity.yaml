@@ -1,0 +1,394 @@
+openapi: 3.0.3
+info:
+  title: Madagascar Agricultural Collectivities Federation API
+  description: >
+    REST API for managing the National Federation of Agricultural Collectivities in Madagascar.
+    This specification covers:
+    - **A**: Collectivity Opening & Management
+    - **B**: Member Admission, Transfers, and Resignations
+    - **C**: Dues and Payments
+    - **D**: Treasury and Bank Accounts
+    - **E**: Collectivity and Federation Activities
+    - **F**: Attendance Tracking
+    - **G**: Statistics and Reporting
+  version: 1.0.0
+  contact:
+    name: Agricultural Federation of Madagascar
+
+servers:
+  - url: https://api.agri-federation.mg/v1
+    description: Production Server
+
+tags:
+  - name: Collectivities
+    description: Operations related to agricultural groups (Functionality A)
+  - name: Members
+    description: Member enrollment and lifecycle management (Functionality B)
+  - name: Treasury
+    description: Dues, payments, and bank accounts (Functionalities C & D)
+  - name: Activities
+    description: Event planning and scheduling (Functionality E)
+  - name: Attendance
+    description: Presence tracking for events (Functionality F)
+  - name: Statistics
+    description: Reports for collectivities and members (Functionality G)
+
+paths:
+  # ============================================================
+  # A - COLLECTIVITIES
+  # ============================================================
+  /collectivities:
+    get:
+      tags: [Collectivities]
+      summary: List all collectivities
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: specialty
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of collectivities retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CollectivityResponse'
+
+    post:
+      tags: [Collectivities]
+      summary: Request the opening of a new collectivity
+      description: >
+        Conditions: At least 10 members (5 with 6+ months seniority), 
+        mandatory roles filled, and federation authorization required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectivityCreateRequest'
+      responses:
+        '201':
+          description: Opening request submitted successfully
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /collectivities/{collectivityId}/authorize:
+    post:
+      tags: [Collectivities]
+      summary: Issue formal opening authorization (Federation only)
+      parameters:
+        - $ref: '#/components/parameters/collectivityId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isAuthorized]
+              properties:
+                isAuthorized:
+                  type: boolean
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Authorization status updated
+
+  # ============================================================
+  # B - MEMBERS
+  # ============================================================
+  /members:
+    post:
+      tags: [Members]
+      summary: Register a new member
+      description: Requires a sponsor (confirmed member, 90+ days seniority) and 50,000 MGA fee.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberCreateRequest'
+      responses:
+        '201':
+          description: Member registered
+
+  /members/{memberId}/transfer:
+    post:
+      tags: [Members]
+      summary: Transfer member to another collectivity
+      parameters:
+        - $ref: '#/components/parameters/memberId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newCollectivityId]
+              properties:
+                newCollectivityId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Transfer completed
+
+  /collectivities/{collectivityId}/mandates:
+    post:
+      tags: [Members]
+      summary: Record new annual mandate (Election results)
+      description: A member cannot hold the same specific position more than twice.
+      parameters:
+        - $ref: '#/components/parameters/collectivityId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MandateRequest'
+      responses:
+        '201':
+          description: Mandate recorded
+
+  # ============================================================
+  # C & D - TREASURY
+  # ============================================================
+  /collectivities/{collectivityId}/payments:
+    post:
+      tags: [Treasury]
+      summary: Record a payment (Dues)
+      description: Recorded by the treasurer. Automatically triggers federation percentage transfer.
+      parameters:
+        - $ref: '#/components/parameters/collectivityId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '201':
+          description: Payment recorded
+
+  /collectivities/{collectivityId}/accounts:
+    get:
+      tags: [Treasury]
+      summary: Get financial status (Accounts)
+      description: One cash account only, multiple bank/mobile money accounts allowed.
+      parameters:
+        - $ref: '#/components/parameters/collectivityId'
+      responses:
+        '200':
+          description: Financial situation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+
+  # ============================================================
+  # E & F - ACTIVITIES & ATTENDANCE
+  # ============================================================
+  /activities:
+    post:
+      tags: [Activities]
+      summary: Schedule an activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityRequest'
+      responses:
+        '201':
+          description: Activity scheduled
+
+  /activities/{activityId}/attendance:
+    post:
+      tags: [Attendance]
+      summary: Record member attendance
+      description: Recorded by the secretary. Supports external members and excused motives.
+      parameters:
+        - $ref: '#/components/parameters/activityId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/AttendanceRecord'
+      responses:
+        '200':
+          description: Attendance list updated
+
+  # ============================================================
+  # G - STATISTICS
+  # ============================================================
+  /collectivities/{collectivityId}/monthly-report:
+    get:
+      tags: [Statistics]
+      summary: Get monthly collectivity report for the federation
+      description: Returns the global attendance rate and total member count.
+      parameters:
+        - $ref: '#/components/parameters/collectivityId'
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}-[0-9]{2}$' # YYYY-MM
+      responses:
+        '200':
+          description: Monthly report data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attendanceRate:
+                    type: number
+                    format: float
+                  totalMembers:
+                    type: integer
+
+  /members/{memberId}/stats:
+    get:
+      tags: [Statistics]
+      summary: Get detailed statistics for an active member
+      description: >
+        Calculates attendance, payments, and potential debt for a given period.
+      parameters:
+        - $ref: '#/components/parameters/memberId'
+        - name: startDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Member statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberStatsResponse'
+
+components:
+  parameters:
+    collectivityId:
+      name: collectivityId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    memberId:
+      name: memberId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    activityId:
+      name: activityId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    UnprocessableEntity:
+      description: Business logic validation failed.
+    NotFound:
+      description: Resource not found.
+
+  schemas:
+    CollectivityCreateRequest:
+      type: object
+      required: [name, city, specialty, initialMembers]
+      properties:
+        name: { type: string }
+        city: { type: string }
+        specialty: { type: string }
+        initialMembers:
+          type: array
+          minItems: 10
+          items: { type: string, format: uuid }
+
+    CollectivityResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        uniqueNumber: { type: string }
+        name: { type: string }
+        city: { type: string }
+        specialty: { type: string }
+        creationDate: { type: string, format: date }
+
+    MemberCreateRequest:
+      type: object
+      required: [firstName, lastName, birthDate, gender, sponsorId]
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        birthDate: { type: string, format: date }
+        gender: { type: string, enum: [Male, Female] }
+        sponsorId: { type: string, format: uuid }
+
+    Account:
+      type: object
+      properties:
+        type: { type: string, enum: [Cash, Bank, MobileMoney] }
+        balance: { type: number }
+        bankName: { type: string, enum: [BRED, MCB, BMOI, BOA, BGFI, AFG, ACCESS, BAOBAB, SIPEM] }
+        rib: { type: string, pattern: '^[0-9]{23}$' }
+
+    ActivityRequest:
+      type: object
+      required: [title, type, date]
+      properties:
+        title: { type: string }
+        type: { type: string, enum: [General_Assembly, Junior_Training, Exceptional] }
+        date: { type: string, format: date-time }
+
+    AttendanceRecord:
+      type: object
+      required: [memberId, status]
+      properties:
+        memberId: { type: string, format: uuid }
+        status: { type: string, enum: [Present, Absent, Excused] }
+        motive: { type: string, description: "Required if status is Excused" }
+
+    MemberStatsResponse:
+      type: object
+      properties:
+        attendanceRate: { type: number, format: float }
+        totalPaid: { type: number }
+        potentialUnpaid: { type: number }
+
+    MandateRequest:
+      type: object
+      required: [year, roles]
+      properties:
+        year: { type: integer }
+        roles:
+          type: array
+          items:
+            type: object
+            properties:
+              role: { type: string, enum: [President, Deputy_President, Treasurer, Secretary] }
+              memberId: { type: string, format: uuid }
+
+    PaymentRequest:
+      type: object
+      required: [memberId, amount, method, date]
+      properties:
+        memberId: { type: string, format: uuid }
+        amount: { type: number }
+        method: { type: string, enum: [Cash, Bank_Transfer, Mobile_Money] }
+        date: { type: string, format: date }
