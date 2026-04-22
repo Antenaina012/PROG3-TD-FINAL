@@ -1,0 +1,250 @@
+openapi: 3.1.0
+info:
+  title: Agricultural federation API
+  description: |
+    API de gestion pour la fédération des collectivités agricoles à Madagascar.
+    Cette version inclut la création de collectivités, l'adhésion des membres 
+    et l'attribution d'identifiants uniques (Fonctionnalité J).
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /collectivities:
+    post:
+      summary: Create list of collectivities
+      description: |
+        Permet de créer de nouvelles collectivités. 
+        Seuls les identifiants des membres sont fournis à la création.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateCollectivity'
+      responses:
+        '201':
+          description: List of created collectivities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Collectivity'
+        '400':
+          description: Collectivity without federation approval or structure missing.
+
+  /collectivities/{id}/identification:
+    patch:
+      summary: Attribute a unique name and number to a collectivity (Fonctionnalité J)
+      description: |
+        Attribue un nom et un numéro unique à une collectivité existante. 
+        Une fois définis, ces champs ne peuvent plus être modifiés.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectivityIdentification'
+      responses:
+        '200':
+          description: Identification attributed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivity'
+        '400':
+          description: Attempt to modify an already assigned identification.
+        '404':
+          description: Collectivity not found.
+        '409':
+          description: Name or Number already exists.
+
+  /members:
+    post:
+      summary: Create list of members
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateMember'
+      responses:
+        '201':
+          description: List of created members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+
+components:
+  schemas:
+    # --- Collectivités ---
+    CreateCollectivity:
+      type: object
+      required:
+        - location
+        - specialty
+        - members
+        - structure
+        - federationApproval
+      properties:
+        location:
+          type: string
+        specialty:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberIdentifier'
+        federationApproval:
+          type: boolean
+        structure:
+          $ref: '#/components/schemas/CreateCollectivityStructure'
+
+    Collectivity:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: Nom unique attribué par la fédération
+        number:
+          type: string
+          description: Numéro unique (ex COL-2026-001)
+        location:
+          type: string
+        specialty:
+          type: string
+        structure:
+          $ref: '#/components/schemas/CollectivityStructure'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+
+    CollectivityIdentification:
+      type: object
+      required:
+        - name
+        - number
+      properties:
+        name:
+          type: string
+        number:
+          type: string
+
+    CreateCollectivityStructure:
+      type: object
+      properties:
+        president:
+          $ref: '#/components/schemas/MemberIdentifier'
+        vicePresident:
+          $ref: '#/components/schemas/MemberIdentifier'
+        treasurer:
+          $ref: '#/components/schemas/MemberIdentifier'
+        secretary:
+          $ref: '#/components/schemas/MemberIdentifier'
+
+    CollectivityStructure:
+      type: object
+      properties:
+        president:
+          $ref: '#/components/schemas/Member'
+        vicePresident:
+          $ref: '#/components/schemas/Member'
+        treasurer:
+          $ref: '#/components/schemas/Member'
+        secretary:
+          $ref: '#/components/schemas/Member'
+
+    # --- Membres ---
+    MemberIdentifier:
+      type: string
+
+    MemberInformation:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        gender:
+          $ref: '#/components/schemas/Gender'
+        address:
+          type: string
+        profession:
+          type: string
+        phoneNumber:
+          type: string
+        email:
+          type: string
+          format: email
+
+    CreateMember:
+      allOf:
+        - $ref: '#/components/schemas/MemberInformation'
+      type: object
+      required:
+        - collectivityIdentifier
+        - referees
+        - registrationFeePaid
+        - membershipDuesPaid
+      properties:
+        collectivityIdentifier:
+          type: string
+        referees:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberIdentifier'
+        registrationFeePaid:
+          type: boolean
+        membershipDuesPaid:
+          type: boolean
+
+    Member:
+      allOf:
+        - $ref: '#/components/schemas/MemberInformation'
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/MemberIdentifier'
+        occupation:
+          $ref: '#/components/schemas/MemberOccupation'
+        joinDate:
+          type: string
+          format: date
+
+    # --- Enums ---
+    Gender:
+      type: string
+      enum:
+        - MALE
+        - FEMALE
+
+    MemberOccupation:
+      type: string
+      enum:
+        - JUNIOR
+        - SENIOR
+        - SECRETARY
+        - TREASURER
+        - VICE_PRESIDENT
+        - PRESIDENT

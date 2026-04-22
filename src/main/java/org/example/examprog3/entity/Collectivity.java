@@ -17,9 +17,9 @@ public class Collectivity {
     private String number;
     private String name;
     private String speciality;
-    private Instant creationDatetime;
+    private java.util.Date creationDatetime;
     private boolean federationApproval;
-    private Instant authorizationDate;
+    private java.util.Date authorizationDate;
     private String location;
     private Structure structure;
     private List<Member> members;

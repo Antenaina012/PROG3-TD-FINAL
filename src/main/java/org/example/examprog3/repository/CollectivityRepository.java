@@ -243,4 +243,34 @@ public class CollectivityRepository {
 
         return savedCollectivities;
     }
+    public boolean existsByName(String name) {
+        String sql = "SELECT count(*) FROM collectivity WHERE name = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, name);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+            return false;
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la vérification du nom", e);
+        }
+    }
+
+    // 2. Mettre à jour uniquement le numéro et le nom
+    public void updateIdentity(Integer id, String number, String name) {
+        String sql = "UPDATE collectivity SET number = ?, name = ? WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, number);
+            stmt.setString(2, name);
+            stmt.setInt(3, id);
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Échec de la mise à jour, collectivité non trouvée.");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la mise à jour de l'identité", e);
+        }
+    }
+}
 }

@@ -7,7 +7,9 @@ import org.example.examprog3.entity.dto.CollectivityResponse;
 import org.example.examprog3.entity.dto.CreateCollectivity;
 import org.example.examprog3.repository.CollectivityRepository;
 import org.example.examprog3.validator.CollectivityValidator;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -19,6 +21,24 @@ import java.util.UUID;
 public class CollectivityService {
     private final CollectivityRepository repository;
     private final CollectivityValidator validator;
+    private final CollectivityRepository repository;
+
+    public Collectivity attributeIdentification(Long id, String name, String number) {
+        Collectivity collectivity = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collectivité introuvable"));
+
+        if (collectivity.getName() != null || collectivity.getNumber() != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "L'identification a déjà été attribuée et ne peut plus être modifiée."
+            );
+        }
+
+        collectivity.setName(name);
+        collectivity.setNumber(number);
+
+        return repository.save(collectivity);
+    }
 
     public List<CollectivityResponse> createCollectivities(List<CreateCollectivity> createCollectivities) throws BadRequestException {
         List<Collectivity> collectivitiesToSave = new ArrayList<>();
