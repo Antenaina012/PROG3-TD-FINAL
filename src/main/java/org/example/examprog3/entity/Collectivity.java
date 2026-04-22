@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -17,9 +16,9 @@ public class Collectivity {
     private String number;
     private String name;
     private String speciality;
-    private Instant creationDatetime;
+    private java.util.Date creationDatetime;
     private boolean federationApproval;
-    private Instant authorizationDate;
+    private java.util.Date authorizationDate;
     private String location;
     private Structure structure;
     private List<Member> members;

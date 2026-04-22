@@ -1,17 +1,17 @@
 package org.example.examprog3.controller;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.example.examprog3.Service.CollectivityService;
+import org.example.examprog3.entity.Collectivity;
 import org.example.examprog3.entity.dto.CollectivityResponse;
 import org.example.examprog3.entity.dto.CreateCollectivity;
 import org.example.examprog3.exeption.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -37,5 +37,38 @@ public class CollectivityController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An unexpected error occurred: " + e.getMessage());
         }
+    }
+
+
+    @PatchMapping("/{id}/identity")
+    public ResponseEntity<?> updateIdentity(
+            @PathVariable Integer id,
+            @RequestBody IdentityRequest request) {
+        try {
+            Collectivity updated = service.assignIdentity(id, request.getNumber(), request.getName());
+            return ResponseEntity.ok(updated);
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erreur lors de l'attribution : " + e.getMessage());
+        }
+    }
+
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class IdentityRequest {
+        private String number;
+        private String name;
     }
 }
