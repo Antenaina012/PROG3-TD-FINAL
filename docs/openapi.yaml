@@ -1,0 +1,381 @@
+openapi: 3.0.3
+info:
+  title: API Fédération Agricole Madagascar
+  version: 1.0.0
+  description: API de gestion des collectivités, candidats, membres, cotisations, présences et statistiques de la fédération.
+servers:
+  - url: https://api.federation-agri.mg
+paths:
+  /collectivities:
+    get:
+      summary: Lister les collectivités
+      operationId: getCollectivities
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Collectivite'
+    post:
+      summary: Créer une nouvelle collectivité
+      operationId: createCollectivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCollectivity'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivite'
+        '400':
+          description: Validation Error
+
+  /members:
+    get:
+      summary: Lister les membres
+      operationId: getMembers
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Membre'
+    post:
+      summary: Enregistrer un nouveau membre
+      operationId: registerMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMember'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Membre'
+        '400':
+          description: Validation Error
+
+  /members/{membreId}:
+    get:
+      summary: Obtenir un membre par son identifiant
+      operationId: getMember
+      parameters:
+        - name: membreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membre'
+        '404':
+          description: Not Found
+    delete:
+      summary: Supprimer un membre
+      operationId: deleteMember
+      parameters:
+        - name: membreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+
+  /cotisations:
+    post:
+      summary: Enregistrer une cotisation
+      operationId: recordPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cotisation'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cotisation'
+        '400':
+          description: Validation Error
+
+  /activites/{activiteId}/presences:
+    post:
+      summary: Enregistrer les présences pour une activité
+      operationId: recordAttendance
+      parameters:
+        - name: activiteId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Presence'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Presence'
+        '400':
+          description: Validation Error
+
+  /federation/stats/global:
+    get:
+      summary: Obtenir les statistiques globales de la fédération
+      operationId: getFederationStats
+      parameters:
+        - name: date_debut
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_fin
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StatFederation'
+        '400':
+          description: Validation Error
+
+components:
+  schemas:
+    Collectivite:
+      type: object
+      required: [id, nom, ville, specialite, date_creation]
+      properties:
+        id:
+          type: string
+        nom:
+          type: string
+        ville:
+          type: string
+        specialite:
+          type: string
+        date_creation:
+          type: string
+          format: date
+
+    CreateCollectivity:
+      type: object
+      required: [name, location, specialty, memberIds, federationApproval, structure]
+      properties:
+        name:
+          type: string
+        location:
+          type: string
+        specialty:
+          type: string
+        memberIds:
+          type: array
+          minItems: 10
+          items:
+            type: string
+        federationApproval:
+          type: boolean
+        structure:
+          $ref: '#/components/schemas/CreateCollectivityStructure'
+
+    CreateCollectivityStructure:
+      type: object
+      required: [presidentId, vicePresidentId, treasurerId, secretaryId]
+      properties:
+        presidentId:
+          type: string
+        vicePresidentId:
+          type: string
+        treasurerId:
+          type: string
+        secretaryId:
+          type: string
+
+    Candidat:
+      type: object
+      required: [nom, id_collectivite_cible, parrains, paiement]
+      properties:
+        nom:
+          type: string
+        id_collectivite_cible:
+          type: string
+        parrains:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Parrain'
+        paiement:
+          type: object
+          required: [montant_total, est_regle]
+          properties:
+            montant_total:
+              type: number
+            est_regle:
+              type: boolean
+
+    Parrain:
+      type: object
+      required: [nom, provenance, relation]
+      properties:
+        nom:
+          type: string
+        provenance:
+          type: string
+          enum: [collectivite_cible, autre]
+        relation:
+          type: string
+
+    Membre:
+      type: object
+      required: [id, firstName, lastName, birthDate, gender, joinDate, occupation]
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum: [MALE, FEMALE]
+        address:
+          type: string
+        profession:
+          type: string
+        phoneNumber:
+          type: string
+        email:
+          type: string
+          format: email
+        joinDate:
+          type: string
+          format: date
+        occupation:
+          type: string
+          enum: [JUNIOR, SENIOR, SECRETARY, TREASURER, VICE_PRESIDENT, PRESIDENT]
+
+    CreateMember:
+      type: object
+      required: [firstName, lastName, birthDate, gender, occupation, collectivityId, refereeIds, registrationFeePaid, membershipDuesPaid]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum: [MALE, FEMALE]
+        address:
+          type: string
+        profession:
+          type: string
+        phoneNumber:
+          type: string
+        email:
+          type: string
+          format: email
+        occupation:
+          type: string
+          enum: [JUNIOR, SENIOR, SECRETARY, TREASURER, VICE_PRESIDENT, PRESIDENT]
+        collectivityId:
+          type: string
+        refereeIds:
+          type: array
+          minItems: 2
+          items:
+            type: string
+        registrationFeePaid:
+          type: boolean
+        membershipDuesPaid:
+          type: boolean
+
+    Presence:
+      type: object
+      required: [membreId, statut]
+      properties:
+        membreId:
+          type: string
+        statut:
+          type: string
+          enum: [present, absent, excuse]
+        motif:
+          type: string
+
+    Cotisation:
+      type: object
+      required: [membreId, montant, date]
+      properties:
+        membreId:
+          type: string
+        montant:
+          type: number
+        date:
+          type: string
+          format: date
+        type_cotisation:
+          type: string
+          enum: [mensuelle, annuelle, exceptionnelle]
+
+    StatFederation:
+      type: object
+      required: [id_collectivite, taux_assiduite, pourcentage_cotisation_a_jour, nouveaux_adherents]
+      properties:
+        id_collectivite:
+          type: string
+        taux_assiduite:
+          type: number
+          format: float
+        pourcentage_cotisation_a_jour:
+          type: number
+          format: float
+        nouveaux_adherents:
+          type: integer
