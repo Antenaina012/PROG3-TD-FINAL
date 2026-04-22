@@ -1,6 +1,6 @@
-package org.example.examprog3.entity;
+package org.example.examprog3.entity.enums;
 
-public enum OccupationEnum {
+public enum CollectivityOccupation {
     JUNIOR,
     SENIOR,
     SECRETARY,

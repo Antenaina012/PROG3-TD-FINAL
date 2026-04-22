@@ -1,5 +1,6 @@
 package org.example.examprog3.config;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,17 +11,14 @@ import java.sql.SQLException;
 @Configuration
 public class DataSource {
 
-    private final String jdbcUrl = System.getenv("JDBC_URL");
-    private final String user = System.getenv("DB_USER");
-    private final String password = System.getenv("DB_PASSWORD");
-
     @Bean
-    public Connection getConnection() {
-        try {
-            return DriverManager.getConnection("jdbc:postgresql://localhost:5432/federation_db","postgres","123");
-        } catch (SQLException e) {
+    public Connection getConnection(){
+        Dotenv dotenv = Dotenv.load();
+        String db_url = dotenv.get("DB_URL");
+        try{
+            return DriverManager.getConnection(db_url);
+        } catch (RuntimeException | SQLException e) {
             throw new RuntimeException(e);
         }
     }
 }
-
