@@ -8,7 +8,7 @@ import org.example.examprog3.Service.CollectivityService;
 import org.example.examprog3.entity.Collectivity;
 import org.example.examprog3.entity.dto.CollectivityResponse;
 import org.example.examprog3.entity.dto.CreateCollectivity;
-import org.example.examprog3.exeption.NotFoundException;
+import org.example.examprog3.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

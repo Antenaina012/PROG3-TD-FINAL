@@ -3,7 +3,7 @@ package org.example.examprog3.Service;
 
 import lombok.AllArgsConstructor;
 import org.example.examprog3.entity.Federation;
-import org.example.examprog3.exeption.NotFoundException;
+import org.example.examprog3.exception.NotFoundException;
 import org.example.examprog3.repository.FederationRepository;
 import org.springframework.stereotype.Service;
 

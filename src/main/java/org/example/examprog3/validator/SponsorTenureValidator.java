@@ -2,7 +2,7 @@ package org.example.examprog3.validator;
 
 
 import org.example.examprog3.entity.Member;
-import org.example.examprog3.exeption.SponsorTenureException;
+import org.example.examprog3.exception.SponsorTenureException;
 import org.springframework.stereotype.Component;
 
 @Component

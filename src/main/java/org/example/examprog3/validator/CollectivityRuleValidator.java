@@ -2,7 +2,7 @@ package org.example.examprog3.validator;
 
 import org.example.examprog3.entity.Member;
 import org.example.examprog3.entity.dto.CreateMember;
-import org.example.examprog3.exeption.InsufficientSponsorCount;
+import org.example.examprog3.exception.InsufficientSponsorCount;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

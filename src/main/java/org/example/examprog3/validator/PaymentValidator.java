@@ -1,7 +1,7 @@
 package org.example.examprog3.validator;
 
 import org.example.examprog3.entity.dto.CreateMember;
-import org.example.examprog3.exeption.PaymentException;
+import org.example.examprog3.exception.PaymentException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

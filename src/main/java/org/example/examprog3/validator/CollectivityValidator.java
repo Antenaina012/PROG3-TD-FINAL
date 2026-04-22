@@ -5,7 +5,7 @@ import org.apache.coyote.BadRequestException;
 import org.example.examprog3.entity.Member;
 import org.example.examprog3.entity.dto.CreateCollectivity;
 import org.example.examprog3.entity.dto.CreateStructure;
-import org.example.examprog3.exeption.NotFoundException;
+import org.example.examprog3.exception.NotFoundException;
 import org.example.examprog3.repository.MemberRepository;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
