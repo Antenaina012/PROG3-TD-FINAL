@@ -1,6 +1,5 @@
 package org.example.examprog3.repository;
 
-
 import lombok.AllArgsConstructor;
 import org.example.examprog3.entity.Collectivity;
 import org.example.examprog3.entity.Member;
@@ -229,7 +228,7 @@ public class MemberRepository {
                 .speciality(rs.getString("speciality"))
                 .authorizationDate(
                         rs.getTimestamp("authorization_date") != null
-                                ? rs.getTimestamp("authorization_date").toInstant()
+                                ? java.util.Date.from(rs.getTimestamp("authorization_date").toInstant())
                                 : null
                 )
                 .location(rs.getString("location"))

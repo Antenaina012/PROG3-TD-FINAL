@@ -7,37 +7,39 @@ import org.example.examprog3.entity.dto.CollectivityResponse;
 import org.example.examprog3.entity.dto.CreateCollectivity;
 import org.example.examprog3.repository.CollectivityRepository;
 import org.example.examprog3.validator.CollectivityValidator;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @AllArgsConstructor
 public class CollectivityService {
+    @Autowired
     private final CollectivityRepository repository;
     private final CollectivityValidator validator;
-    private final CollectivityRepository repository;
 
-    public Collectivity attributeIdentification(Long id, String name, String number) {
-        Collectivity collectivity = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collectivité introuvable"));
-
-        if (collectivity.getName() != null || collectivity.getNumber() != null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "L'identification a déjà été attribuée et ne peut plus être modifiée."
-            );
+    public Collectivity assignIdentity(Integer id, String newNumber, String newName) {
+        Collectivity collectivity = repository.findById(id);
+        if (collectivity == null) {
+            throw new RuntimeException("Collectivité introuvable ID: " + id);
         }
 
-        collectivity.setName(name);
-        collectivity.setNumber(number);
+        if (collectivity.getNumber() != null || collectivity.getName() != null) {
+            throw new IllegalStateException("L'identité est déjà fixée et ne peut plus être modifiée.");
+        }
 
-        return repository.save(collectivity);
+        if (repository.existsByName(newName)) {
+            throw new IllegalArgumentException("Le nom '" + newName + "' est déjà utilisé.");
+        }
+
+        repository.updateIdentity(id, newNumber, newName);
+
+        return repository.findById(id);
     }
 
     public List<CollectivityResponse> createCollectivities(List<CreateCollectivity> createCollectivities) throws BadRequestException {
@@ -56,7 +58,7 @@ public class CollectivityService {
                     .name(generateCollectivityName(request.getLocation()))
                     .speciality("Agriculture")
                     .federationApproval(request.isFederationApproval())
-                    .authorizationDate(Instant.now())
+                    .authorizationDate(Date.from(Instant.now()))
                     .location(request.getLocation())
                     .build();
 

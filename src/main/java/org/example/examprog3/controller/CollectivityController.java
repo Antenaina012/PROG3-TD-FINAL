@@ -1,6 +1,8 @@
 package org.example.examprog3.controller;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.example.examprog3.Service.CollectivityService;
 import org.example.examprog3.entity.Collectivity;
@@ -37,6 +39,7 @@ public class CollectivityController {
         }
     }
 
+
     @PatchMapping("/{id}/identity")
     public ResponseEntity<?> updateIdentity(
             @PathVariable Integer id,
@@ -46,19 +49,26 @@ public class CollectivityController {
             return ResponseEntity.ok(updated);
 
         } catch (IllegalStateException e) {
-            // 403 Forbidden : Identité déjà fixée (Immuabilité)
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
 
         } catch (IllegalArgumentException e) {
-            // 400 Bad Request : Nom déjà utilisé ou données manquantes
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
 
         } catch (NotFoundException e) {
-            // 404 Not Found : Collectivité inexistante
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Erreur lors de l'attribution : " + e.getMessage());
         }
+    }
+
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class IdentityRequest {
+        private String number;
+        private String name;
+    }
 }
