@@ -14,11 +14,11 @@ import java.util.Date;
 @Setter
 @Builder
 public class Payment {
-    private Integer id;
-    private Integer memberId;
-    private Integer collectivityId;
-    private Integer membershipFeeIdentifier;
-    private Integer accountCreditedIdentifier;
+    private String id;
+    private String  memberId;
+    private String collectivityId;
+    private String membershipFeeIdentifier;
+    private String accountCreditedIdentifier;
     private BigDecimal amount;
     private PaymentMode paymentMode;
     private String description;

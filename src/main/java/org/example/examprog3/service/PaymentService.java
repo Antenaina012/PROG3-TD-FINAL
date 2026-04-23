@@ -45,7 +45,7 @@ public class PaymentService {
         }
 
         // Forcer les données de contexte pour la sécurité
-        payment.setCollectivityId(collectivityId);
+        payment.setCollectivityId(String.valueOf(collectivityId));
         payment.setTransactionType(PaymentType.IN); // Toujours 'IN' pour un encaissement
     }
 

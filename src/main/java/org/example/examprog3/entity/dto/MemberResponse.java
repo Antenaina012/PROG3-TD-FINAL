@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 public class MemberResponse {
 
-    private Integer id;
+    private String id;
     private String firstName;
     private String lastName;
     private LocalDate birthDate;

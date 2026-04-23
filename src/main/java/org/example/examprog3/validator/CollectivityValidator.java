@@ -27,7 +27,7 @@ public class CollectivityValidator {
         }
 
 
-        List<Integer> memberIds = createCollectivity.getMemberIds();
+        List<String> memberIds = createCollectivity.getMemberIds();
         if (memberIds == null || memberIds.isEmpty()) {
             throw new BadRequestException("Collectivity must have members");
         }
@@ -57,12 +57,12 @@ public class CollectivityValidator {
     }
 
 
-    private void validateAllMembersExist(List<Integer> memberIds) {
+    private void validateAllMembersExist(List<String> memberIds) {
         List<Integer> missingIds = new ArrayList<>();
 
-        for (Integer id : memberIds) {
-            if (!memberRepository.existsById(id)) {
-                missingIds.add(id);
+        for (String id : memberIds) {
+            if (!memberRepository.existsById(Integer.valueOf(id))) {
+                missingIds.add(Integer.valueOf(id));
             }
         }
 
@@ -73,7 +73,7 @@ public class CollectivityValidator {
 
 
 
-    private void validateStructure(CreateStructure structure, List<Integer> memberIds) throws BadRequestException {
+    private void validateStructure(CreateStructure structure, List<String> memberIds) throws BadRequestException {
         if (structure == null) {
             throw new BadRequestException("Collectivity structure is required");
         }
@@ -91,15 +91,15 @@ public class CollectivityValidator {
             throw new BadRequestException("Secretary ID is required");
         }
 
-        validateStructureMemberExists(structure.getPresidentId(), "President");
-        validateStructureMemberExists(structure.getVicePresidentId(), "Vice President");
-        validateStructureMemberExists(structure.getTreasurerId(), "Treasurer");
-        validateStructureMemberExists(structure.getSecretaryId(), "Secretary");
+        validateStructureMemberExists(Integer.valueOf(structure.getPresidentId()), "President");
+        validateStructureMemberExists(Integer.valueOf(structure.getVicePresidentId()), "Vice President");
+        validateStructureMemberExists(Integer.valueOf(structure.getTreasurerId()), "Treasurer");
+        validateStructureMemberExists(Integer.valueOf(structure.getSecretaryId()), "Secretary");
 
-        validateStructureMemberInList(structure.getPresidentId(), memberIds, "President");
-        validateStructureMemberInList(structure.getVicePresidentId(), memberIds, "Vice President");
-        validateStructureMemberInList(structure.getTreasurerId(), memberIds, "Treasurer");
-        validateStructureMemberInList(structure.getSecretaryId(), memberIds, "Secretary");
+        validateStructureMemberInList(Integer.valueOf(structure.getPresidentId()), memberIds, "President");
+        validateStructureMemberInList(Integer.valueOf(structure.getVicePresidentId()), memberIds, "Vice President");
+        validateStructureMemberInList(Integer.valueOf(structure.getTreasurerId()), memberIds, "Treasurer");
+        validateStructureMemberInList(Integer.valueOf(structure.getSecretaryId()), memberIds, "Secretary");
 
         validateNoDuplicateRoles(structure);
     }
@@ -110,14 +110,14 @@ public class CollectivityValidator {
         }
     }
 
-    private void validateStructureMemberInList(Integer memberId, List<Integer> memberIds, String role) throws BadRequestException {
+    private void validateStructureMemberInList(Integer memberId, List<String> memberIds, String role) throws BadRequestException {
         if (!memberIds.contains(memberId)) {
             throw new BadRequestException(role + " must be one of the collectivity members");
         }
     }
 
     private void validateNoDuplicateRoles(CreateStructure structure) throws BadRequestException {
-        List<Integer> roleIds = List.of(
+        List<String> roleIds = List.of(
                 structure.getPresidentId(),
                 structure.getVicePresidentId(),
                 structure.getTreasurerId(),

@@ -21,16 +21,16 @@ public class PaymentRepository {
             VALUES (?, ?, ?, ?, ?, ?::payment_mode, ?, 'IN', now())
         """;
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, transaction.getMemberId());
-            stmt.setInt(2, transaction.getCollectivityId());
+            stmt.setInt(1, Integer.parseInt(transaction.getMemberId()));
+            stmt.setInt(2, Integer.parseInt(transaction.getCollectivityId()));
 
             if (transaction.getMembershipFeeIdentifier() != null) {
-                stmt.setInt(3, transaction.getMembershipFeeIdentifier());
+                stmt.setInt(3, Integer.parseInt(transaction.getMembershipFeeIdentifier()));
             } else {
                 stmt.setNull(3, Types.INTEGER);
             }
 
-            stmt.setInt(4, transaction.getAccountCreditedIdentifier());
+            stmt.setInt(4, Integer.parseInt(transaction.getAccountCreditedIdentifier()));
             stmt.setBigDecimal(5, transaction.getAmount());
             stmt.setString(6, transaction.getPaymentMode().toString());
             stmt.setString(7, transaction.getDescription());
@@ -51,11 +51,11 @@ public class PaymentRepository {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     transactions.add(Payment.builder()
-                            .id(rs.getInt("id"))
-                            .memberId(rs.getInt("id_member"))
-                            .collectivityId(rs.getInt("id_collectivity"))
-                            .membershipFeeIdentifier(rs.getObject("id_cotisation_plan") != null ? rs.getInt("id_cotisation_plan") : null)
-                            .accountCreditedIdentifier(rs.getInt("id_account"))
+                            .id(String.valueOf(rs.getInt("id")))
+                            .memberId(String.valueOf(rs.getInt("id_member")))
+                            .collectivityId(String.valueOf(rs.getInt("id_collectivity")))
+                            .membershipFeeIdentifier(String.valueOf(rs.getObject("id_cotisation_plan") != null ? rs.getInt("id_cotisation_plan") : null))
+                            .accountCreditedIdentifier(String.valueOf(rs.getInt("id_account")))
                             .amount(rs.getBigDecimal("amount"))
                             .paymentMode(PaymentMode.valueOf(rs.getString("payment_mode")))
                             .transactionType(PaymentType.valueOf(rs.getString("transaction_type")))
@@ -87,9 +87,9 @@ public class PaymentRepository {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     transactions.add(Payment.builder()
-                            .id(rs.getInt("id"))
-                            .memberId(rs.getInt("id_member"))
-                            .collectivityId(rs.getInt("id_collectivity"))
+                            .id(String.valueOf(rs.getInt("id")))
+                            .memberId(String.valueOf(rs.getInt("id_member")))
+                            .collectivityId(String.valueOf(rs.getInt("id_collectivity")))
                             .amount(rs.getBigDecimal("amount"))
                             .description(rs.getString("description"))
                             .transactionDate(rs.getTimestamp("transaction_date"))

@@ -24,7 +24,7 @@ public class CollectivityRepository {
 
     // --- SAUVEGARDE ---
 
-    public Collectivity save(Collectivity collectivity, List<Integer> memberIds,
+    public Collectivity save(Collectivity collectivity, List<String> memberIds,
                              Integer presidentId, Integer vicePresidentId,
                              Integer treasurerId, Integer secretaryId) {
         String insertCollectivitySql = """
@@ -61,10 +61,10 @@ public class CollectivityRepository {
 
             try (PreparedStatement memberStmt = connection.prepareStatement(insertMemberSql)) {
                 Timestamp now = Timestamp.from(Instant.now());
-                for (Integer memberId : memberIds) {
-                    memberStmt.setInt(1, memberId);
+                for (String memberId : memberIds) {
+                    memberStmt.setInt(1, Integer.parseInt(memberId));
                     memberStmt.setInt(2, collectivityId);
-                    memberStmt.setString(3, determineOccupation(memberId, presidentId, vicePresidentId, treasurerId, secretaryId));
+                    memberStmt.setString(3, determineOccupation(Integer.valueOf(memberId), presidentId, vicePresidentId, treasurerId, secretaryId));
                     memberStmt.setTimestamp(4, now);
                     memberStmt.addBatch();
                 }
@@ -81,7 +81,7 @@ public class CollectivityRepository {
     }
 
     public List<Collectivity> saveAll(List<Collectivity> collectivities,
-                                      List<List<Integer>> memberIdsList,
+                                      List<List<String>> memberIdsList,
                                       List<Integer> presidentIds,
                                       List<Integer> vicePresidentIds,
                                       List<Integer> treasurerIds,
@@ -109,7 +109,7 @@ public class CollectivityRepository {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     Collectivity collectivity = Collectivity.builder()
-                            .id(rs.getInt("id"))
+                            .id(String.valueOf(rs.getInt("id")))
                             .name(rs.getString("name"))
                             .number(rs.getString("number")) // Récupération propre du String
                             .location(rs.getString("location"))
@@ -136,11 +136,11 @@ public class CollectivityRepository {
         List<Member> members = new ArrayList<>();
         Structure structure = Structure.builder().build();
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, collectivity.getId());
+            stmt.setInt(1, Integer.parseInt(collectivity.getId()));
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 Member member = Member.builder()
-                        .id(rs.getInt("id"))
+                        .id(String.valueOf(rs.getInt("id")))
                         .firstName(rs.getString("first_name"))
                         .lastName(rs.getString("last_name"))
                         .gender(Gender.valueOf(rs.getString("gender")))

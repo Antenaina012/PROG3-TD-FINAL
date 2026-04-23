@@ -50,7 +50,7 @@ public class CollectivityService {
 
     public List<CollectivityResponse> createCollectivities(List<CreateCollectivity> createRequests) throws BadRequestException {
         List<Collectivity> collectivitiesToSave = new ArrayList<>();
-        List<List<Integer>> memberIdsList = new ArrayList<>();
+        List<List<String>> memberIdsList = new ArrayList<>();
         List<Integer> presidentIds = new ArrayList<>();
         List<Integer> vicePresidentIds = new ArrayList<>();
         List<Integer> treasurerIds = new ArrayList<>();
@@ -73,10 +73,10 @@ public class CollectivityService {
             memberIdsList.add(request.getMemberIds());
 
             // Extraction des IDs de la structure
-            presidentIds.add(request.getStructure().getPresidentId());
-            vicePresidentIds.add(request.getStructure().getVicePresidentId());
-            treasurerIds.add(request.getStructure().getTreasurerId());
-            secretaryIds.add(request.getStructure().getSecretaryId());
+            presidentIds.add(Integer.valueOf(request.getStructure().getPresidentId()));
+            vicePresidentIds.add(Integer.valueOf(request.getStructure().getVicePresidentId()));
+            treasurerIds.add(Integer.valueOf(request.getStructure().getTreasurerId()));
+            secretaryIds.add(Integer.valueOf(request.getStructure().getSecretaryId()));
         }
 
         List<Collectivity> savedCollectivities = repository.saveAll(

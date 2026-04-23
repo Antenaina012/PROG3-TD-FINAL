@@ -20,7 +20,7 @@ public class MemberRepository {
 
     private final Connection connection;
 
-    public List<Member> findByIds(List<Integer> ids) {
+    public List<Member> findByIds(List<String> ids) {
         if (ids == null || ids.isEmpty()) return new ArrayList<>();
 
         String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
@@ -59,7 +59,7 @@ public class MemberRepository {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             for (int i = 0; i < ids.size(); i++) {
-                stmt.setInt(i + 1, ids.get(i));
+                stmt.setInt(i + 1, Integer.parseInt(String.valueOf(ids.get(i))));
             }
 
             ResultSet rs = stmt.executeQuery();
@@ -161,7 +161,7 @@ public class MemberRepository {
                     if (!keys.next()) throw new RuntimeException("No generated key");
 
                     int memberId = keys.getInt(1);
-                    member.setId(memberId);
+                    member.setId(String.valueOf(memberId));
 
                     // ---------------- MEMBER_COLLECTIVITY ----------------
                     mcStmt.setInt(1, memberId);
@@ -208,7 +208,7 @@ public class MemberRepository {
 
     private Member mapBasicMember(ResultSet rs) throws SQLException {
         return Member.builder()
-                .id(rs.getInt("m_id"))
+                .id(String.valueOf(rs.getInt("m_id")))
                 .firstName(rs.getString("first_name"))
                 .lastName(rs.getString("last_name"))
                 .birthDate(rs.getDate("birth_date").toLocalDate())
@@ -225,7 +225,7 @@ public class MemberRepository {
     private MemberCollectivity mapMemberCollectivity(ResultSet rs, Member member) throws SQLException {
 
         Collectivity c = Collectivity.builder()
-                .id(rs.getInt("c_id"))
+                .id(String.valueOf(rs.getInt("c_id")))
                 .name(rs.getString("name"))
                 .number(rs.getString("number"))
                 .speciality(rs.getString("speciality"))

@@ -32,7 +32,7 @@ public class MemberService {
                 .distinct()
                 .toList();
 
-        List<Member> sponsors = repository.findByIds(sponsorIds);
+        List<Member> sponsors = repository.findByIds(Collections.singletonList(String.valueOf(sponsorIds)));
 
         memberList.forEach(m ->
                 collectivityRuleValidator.validate(m, sponsors)
@@ -68,7 +68,7 @@ public class MemberService {
                     CreateMember dto = dtos.get(i);
 
                     return MemberResponse.builder()
-                            .id(m.getId())
+                            .id(String.valueOf(Integer.valueOf(m.getId())))
                             .firstName(m.getFirstName())
                             .lastName(m.getLastName())
                             .birthDate(m.getBirthDate())
