@@ -1,6 +1,6 @@
 package org.example.examprog3.entity.enums;
 
-public enum TransactionType {
+public enum PaymentType {
     IN,
     OUT
 }

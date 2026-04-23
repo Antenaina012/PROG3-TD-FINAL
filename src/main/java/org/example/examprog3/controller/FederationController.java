@@ -1,7 +1,7 @@
 package org.example.examprog3.controller;
 
 import lombok.AllArgsConstructor;
-import org.example.examprog3.Service.FederationService;
+import org.example.examprog3.service.FederationService;
 import org.example.examprog3.entity.Federation;
 import org.example.examprog3.exception.NotFoundException;
 import org.springframework.http.HttpStatus;

@@ -1,7 +1,7 @@
 package org.example.examprog3.controller;
 
 import lombok.AllArgsConstructor;
-import org.example.examprog3.Service.MemberService;
+import org.example.examprog3.service.MemberService;
 import org.example.examprog3.entity.dto.CreateMember;
 import org.example.examprog3.exception.InsufficientSponsorCount;
 import org.example.examprog3.exception.NotFoundException;

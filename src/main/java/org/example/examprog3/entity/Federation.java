@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Federation {
     private Integer id;
-    private double cotisationPercentage;
+    private double contributionPercentage;
     private Structure structure;
 }

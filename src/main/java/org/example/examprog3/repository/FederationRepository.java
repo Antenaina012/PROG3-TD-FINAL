@@ -51,7 +51,7 @@ public class FederationRepository {
                 if (federation == null) {
                     federation = Federation.builder()
                             .id(rs.getInt("federation_id"))
-                            .cotisationPercentage(rs.getDouble("cotisation_percentage"))
+                            .contributionPercentage(rs.getDouble("cotisation_percentage"))
                             .build();
                 }
 

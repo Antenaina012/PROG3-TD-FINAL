@@ -8,7 +8,6 @@ import org.example.examprog3.entity.enums.CollectivityOccupation;
 import org.example.examprog3.entity.enums.Gender;
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 
 

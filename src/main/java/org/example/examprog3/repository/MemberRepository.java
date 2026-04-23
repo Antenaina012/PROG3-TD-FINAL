@@ -144,6 +144,7 @@ public class MemberRepository {
                     Member member = members.get(i);
                     CreateMember dto = dtos.get(i);
 
+                    // ---------------- MEMBER ----------------
                     memberStmt.setString(1, member.getFirstName());
                     memberStmt.setString(2, member.getLastName());
                     memberStmt.setDate(3, Date.valueOf(member.getBirthDate()));
@@ -162,6 +163,7 @@ public class MemberRepository {
                     int memberId = keys.getInt(1);
                     member.setId(memberId);
 
+                    // ---------------- MEMBER_COLLECTIVITY ----------------
                     mcStmt.setInt(1, memberId);
                     mcStmt.setInt(2, dto.getCollectivityIdentifier());
                     mcStmt.setString(3, dto.getOccupation().name());
@@ -170,6 +172,7 @@ public class MemberRepository {
 
                     mcStmt.executeUpdate();
 
+                    // ---------------- REFEREES ----------------
                     if (dto.getReferees() != null) {
                         for (Integer refId : dto.getReferees()) {
 

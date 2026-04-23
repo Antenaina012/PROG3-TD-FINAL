@@ -1,13 +1,13 @@
-package org.example.examprog3.Service;
+package org.example.examprog3.service;
 
 import lombok.AllArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.example.examprog3.entity.Collectivity;
+import org.example.examprog3.entity.FinancialAccount;
 import org.example.examprog3.entity.dto.CollectivityResponse;
 import org.example.examprog3.entity.dto.CreateCollectivity;
 import org.example.examprog3.repository.CollectivityRepository;
 import org.example.examprog3.validator.CollectivityValidator;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -17,19 +17,20 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor
+@AllArgsConstructor // Gère l'injection de repository et validator automatiquement
 public class CollectivityService {
-    @Autowired
+
     private final CollectivityRepository repository;
     private final CollectivityValidator validator;
 
     public Collectivity assignIdentity(Integer id, String newNumber, String newName) {
         Collectivity collectivity = repository.findById(id);
+
         if (collectivity == null) {
             throw new RuntimeException("Collectivité introuvable ID: " + id);
         }
 
-        if (collectivity.getNumber() != null || collectivity.getName() != null) {
+        if (isIdentityFixed(collectivity)) {
             throw new IllegalStateException("L'identité est déjà fixée et ne peut plus être modifiée.");
         }
 
@@ -42,7 +43,12 @@ public class CollectivityService {
         return repository.findById(id);
     }
 
-    public List<CollectivityResponse> createCollectivities(List<CreateCollectivity> createCollectivities) throws BadRequestException {
+    private boolean isIdentityFixed(Collectivity c) {
+        return (c.getNumber() != null && !c.getNumber().isBlank()) ||
+                (c.getName() != null && !c.getName().isBlank());
+    }
+
+    public List<CollectivityResponse> createCollectivities(List<CreateCollectivity> createRequests) throws BadRequestException {
         List<Collectivity> collectivitiesToSave = new ArrayList<>();
         List<List<Integer>> memberIdsList = new ArrayList<>();
         List<Integer> presidentIds = new ArrayList<>();
@@ -50,7 +56,8 @@ public class CollectivityService {
         List<Integer> treasurerIds = new ArrayList<>();
         List<Integer> secretaryIds = new ArrayList<>();
 
-        for (CreateCollectivity request : createCollectivities) {
+        for (CreateCollectivity request : createRequests) {
+            // Validation personnalisée (vérifie les IDs de membres, etc.)
             validator.validateCollectivityCreation(request);
 
             Collectivity collectivity = Collectivity.builder()
@@ -64,6 +71,8 @@ public class CollectivityService {
 
             collectivitiesToSave.add(collectivity);
             memberIdsList.add(request.getMemberIds());
+
+            // Extraction des IDs de la structure
             presidentIds.add(request.getStructure().getPresidentId());
             vicePresidentIds.add(request.getStructure().getVicePresidentId());
             treasurerIds.add(request.getStructure().getTreasurerId());
@@ -98,6 +107,21 @@ public class CollectivityService {
     }
 
     private String generateCollectivityName(String locationName) {
-        return "Collectivité de " + locationName;
+        return "Collectivité de " + locationName + " " + UUID.randomUUID().toString().substring(0, 4);
+    }
+
+    public Collectivity getById(Integer id) {
+        Collectivity collectivity = repository.findById(id);
+        if (collectivity == null) {
+            // Optionnel : Tu peux créer une classe ResourceNotFoundException pour un retour 404 propre
+            throw new RuntimeException("Collectivité non trouvée pour l'ID : " + id);
+        }
+        return collectivity;
+    }
+
+    public List<FinancialAccount> getFinancialAccountsWithBalance(Integer id, String atDate) {
+        this.getById(id);
+
+        return repository.findAccountsWithBalance(id, atDate);
     }
 }

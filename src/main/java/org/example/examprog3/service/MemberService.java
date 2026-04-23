@@ -1,4 +1,4 @@
-package org.example.examprog3.Service;
+package org.example.examprog3.service;
 
 import lombok.AllArgsConstructor;
 import org.example.examprog3.entity.Member;

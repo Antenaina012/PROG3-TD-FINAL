@@ -10,12 +10,13 @@ import java.util.List;
 @Component
 public class SponsorCountValidator {
     public void validate(CreateMember member) {
-        if (member.getReferees().size() < 2) {
+        if (member.getReferees() == null || member.getReferees().size() < 2) {
             throw new InsufficientSponsorCount(
                     member.getFirstName() + " : at least two sponsors required"
             );
         }
     }
+
     public void validate(List<CreateMember> members) {
         for (CreateMember member : members) {
             validate(member);
