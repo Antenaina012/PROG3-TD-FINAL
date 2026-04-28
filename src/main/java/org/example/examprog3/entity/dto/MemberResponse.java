@@ -21,5 +21,5 @@ public class MemberResponse {
     private String phoneNumber;
     private String email;
 
-    private List<Integer> referees;
+    private List<String> referees;
 }

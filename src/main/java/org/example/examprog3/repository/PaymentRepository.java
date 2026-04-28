@@ -15,51 +15,54 @@ public class PaymentRepository {
     private final Connection connection;
 
     public void saveTransaction(Payment transaction) {
+        // Mise à jour : table "transaction", colonnes sans "id_" et avec cast ::account_type
         String sql = """
             INSERT INTO "transaction" 
-            (id_member, id_collectivity, id_cotisation_plan, id_account, amount, payment_mode, description, transaction_type, transaction_date)
-            VALUES (?, ?, ?, ?, ?, ?::payment_mode, ?, 'IN', now())
+            (member_id, collectivity_id, account_id, amount, label, transaction_date)
+            VALUES (?, ?, ?, ?, ?, ?)
         """;
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, Integer.parseInt(transaction.getMemberId()));
-            stmt.setInt(2, Integer.parseInt(transaction.getCollectivityId()));
+            stmt.setString(1, transaction.getMemberId());
+            stmt.setString(2, transaction.getCollectivityId());
+            stmt.setString(3, transaction.getAccountCreditedIdentifier());
+            stmt.setBigDecimal(4, transaction.getAmount());
+            stmt.setString(5, transaction.getDescription()); // Le label du PDF
 
-            if (transaction.getMembershipFeeIdentifier() != null) {
-                stmt.setInt(3, Integer.parseInt(transaction.getMembershipFeeIdentifier()));
-            } else {
-                stmt.setNull(3, Types.INTEGER);
-            }
-
-            stmt.setInt(4, Integer.parseInt(transaction.getAccountCreditedIdentifier()));
-            stmt.setBigDecimal(5, transaction.getAmount());
-            stmt.setString(6, transaction.getPaymentMode().toString());
-            stmt.setString(7, transaction.getDescription());
+            // On utilise la date fournie dans le PDF (ex: 01/01/2026)
+            // ou l'heure actuelle si absente
+            stmt.setTimestamp(6, transaction.getTransactionDate() != null ?
+                    new Timestamp(transaction.getTransactionDate().getTime()) : new Timestamp(System.currentTimeMillis()));
 
             stmt.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de l'enregistrement du paiement", e);
+            throw new RuntimeException("Erreur lors de l'enregistrement du paiement : " + e.getMessage(), e);
         }
-
     }
-    public List<Payment> findAllByCollectivityId(Integer collectivityId) {
+
+    public List<Payment> findAllByCollectivityId(String collectivityId) {
         List<Payment> transactions = new ArrayList<>();
-        String sql = "SELECT * FROM \"transaction\" WHERE id_collectivity = ? ORDER BY transaction_date DESC";
+        // Jointure avec financial_account pour récupérer le payment_mode
+        String sql = """
+            SELECT t.*, a.type as payment_mode 
+            FROM "transaction" t
+            JOIN financial_account a ON t.account_id = a.id
+            WHERE t.collectivity_id = ? 
+            ORDER BY t.transaction_date DESC
+        """;
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, collectivityId);
+            stmt.setString(1, collectivityId);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     transactions.add(Payment.builder()
-                            .id(String.valueOf(rs.getInt("id")))
-                            .memberId(String.valueOf(rs.getInt("id_member")))
-                            .collectivityId(String.valueOf(rs.getInt("id_collectivity")))
-                            .membershipFeeIdentifier(String.valueOf(rs.getObject("id_cotisation_plan") != null ? rs.getInt("id_cotisation_plan") : null))
-                            .accountCreditedIdentifier(String.valueOf(rs.getInt("id_account")))
+                            .id(rs.getString("id"))
+                            .memberId(rs.getString("member_id"))
+                            .collectivityId(rs.getString("collectivity_id"))
+                            .accountCreditedIdentifier(rs.getString("account_id"))
                             .amount(rs.getBigDecimal("amount"))
                             .paymentMode(PaymentMode.valueOf(rs.getString("payment_mode")))
-                            .transactionType(PaymentType.valueOf(rs.getString("transaction_type")))
-                            .description(rs.getString("description"))
+                            .description(rs.getString("label"))
                             .transactionDate(rs.getTimestamp("transaction_date"))
                             .build());
                 }
@@ -69,29 +72,29 @@ public class PaymentRepository {
         }
         return transactions;
     }
-    public List<Payment> findTransactionsByPeriod(Integer id, String from, String to) {
+
+    public List<Payment> findTransactionsByPeriod(String id, String from, String to) {
         List<Payment> transactions = new ArrayList<>();
-        // Requête SQL filtrant par collectivité ET par période
         String sql = """
-        SELECT * FROM "transaction" 
-        WHERE id_collectivity = ? 
-        AND transaction_date BETWEEN ?::date AND ?::date 
-        ORDER BY transaction_date DESC
-    """;
+            SELECT * FROM "transaction" 
+            WHERE collectivity_id = ? 
+            AND transaction_date BETWEEN ?::timestamp AND ?::timestamp 
+            ORDER BY transaction_date DESC
+        """;
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            stmt.setString(2, from); // "2026-01-01"
-            stmt.setString(3, to);   // "2026-12-31"
+            stmt.setString(1, id);
+            stmt.setString(2, from + " 00:00:00");
+            stmt.setString(3, to + " 23:59:59");
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     transactions.add(Payment.builder()
-                            .id(String.valueOf(rs.getInt("id")))
-                            .memberId(String.valueOf(rs.getInt("id_member")))
-                            .collectivityId(String.valueOf(rs.getInt("id_collectivity")))
+                            .id(rs.getString("id"))
+                            .memberId(rs.getString("member_id"))
+                            .collectivityId(rs.getString("collectivity_id"))
                             .amount(rs.getBigDecimal("amount"))
-                            .description(rs.getString("description"))
+                            .description(rs.getString("label"))
                             .transactionDate(rs.getTimestamp("transaction_date"))
                             .build());
                 }

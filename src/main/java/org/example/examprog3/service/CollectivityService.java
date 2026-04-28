@@ -4,26 +4,32 @@ import lombok.AllArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.example.examprog3.entity.Collectivity;
 import org.example.examprog3.entity.FinancialAccount;
+import org.example.examprog3.entity.MembershipFee;
 import org.example.examprog3.entity.dto.CollectivityResponse;
 import org.example.examprog3.entity.dto.CreateCollectivity;
+import org.example.examprog3.entity.dto.CreateMembershipFee;
+import org.example.examprog3.exception.NotFoundException;
 import org.example.examprog3.repository.CollectivityRepository;
+import org.example.examprog3.repository.MembershipFeeRepository;
 import org.example.examprog3.validator.CollectivityValidator;
+import org.example.examprog3.validator.MembershipFeeValidator;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor // Gère l'injection de repository et validator automatiquement
+@AllArgsConstructor
 public class CollectivityService {
 
     private final CollectivityRepository repository;
     private final CollectivityValidator validator;
+    private final MembershipFeeRepository feeRepository;
+    private final MembershipFeeValidator feeValidator;
 
-    public Collectivity assignIdentity(Integer id, String newNumber, String newName) {
+    public Collectivity assignIdentity(String id, String newNumber, String newName) {
+        // Utilisation directe du String id
         Collectivity collectivity = repository.findById(id);
 
         if (collectivity == null) {
@@ -38,6 +44,7 @@ public class CollectivityService {
             throw new IllegalArgumentException("Le nom '" + newName + "' est déjà utilisé.");
         }
 
+        // Plus de Integer.valueOf(id)
         repository.updateIdentity(id, newNumber, newName);
 
         return repository.findById(id);
@@ -49,53 +56,42 @@ public class CollectivityService {
     }
 
     public List<CollectivityResponse> createCollectivities(List<CreateCollectivity> createRequests) throws BadRequestException {
-        List<Collectivity> collectivitiesToSave = new ArrayList<>();
-        List<List<String>> memberIdsList = new ArrayList<>();
-        List<Integer> presidentIds = new ArrayList<>();
-        List<Integer> vicePresidentIds = new ArrayList<>();
-        List<Integer> treasurerIds = new ArrayList<>();
-        List<Integer> secretaryIds = new ArrayList<>();
+        List<CollectivityResponse> responses = new ArrayList<>();
 
         for (CreateCollectivity request : createRequests) {
-            // Validation personnalisée (vérifie les IDs de membres, etc.)
+            // 1. Validation
             validator.validateCollectivityCreation(request);
 
+            // 2. Construction de l'objet Collectivity (Données du PDF)
             Collectivity collectivity = Collectivity.builder()
-                    .number(generateCollectivityNumber())
-                    .name(generateCollectivityName(request.getLocation()))
-                    .speciality("Agriculture")
-                    .federationApproval(request.isFederationApproval())
-                    .authorizationDate(Date.from(Instant.now()))
+                    .id(request.getId())
+                    .number(request.getNumber())
+                    .name(request.getName())
                     .location(request.getLocation())
+                    .speciality(request.getSpeciality())
+                    .federationApproval(request.isFederationApproval())
                     .build();
 
-            collectivitiesToSave.add(collectivity);
-            memberIdsList.add(request.getMemberIds());
+            // 3. Appel du SAVE individuel (IMPORTANT)
+            // Ici on passe UN id de président, pas une liste.
+            Collectivity saved = repository.saveAll(
+                    collectivity,
+                    request.getMembers(), // C'est une List<String> pour un seul membre
+                    request.getStructure().getPresidentId(), // C'est un String
+                    request.getStructure().getVicePresidentId(), // C'est un String
+                    request.getStructure().getTreasurerId(), // C'est un String
+                    request.getStructure().getSecretaryId() // C'est un String
+            );
 
-            // Extraction des IDs de la structure
-            presidentIds.add(Integer.valueOf(request.getStructure().getPresidentId()));
-            vicePresidentIds.add(Integer.valueOf(request.getStructure().getVicePresidentId()));
-            treasurerIds.add(Integer.valueOf(request.getStructure().getTreasurerId()));
-            secretaryIds.add(Integer.valueOf(request.getStructure().getSecretaryId()));
+            responses.add(buildResponse(saved));
         }
 
-        List<Collectivity> savedCollectivities = repository.saveAll(
-                collectivitiesToSave,
-                memberIdsList,
-                presidentIds,
-                vicePresidentIds,
-                treasurerIds,
-                secretaryIds
-        );
-
-        return savedCollectivities.stream()
-                .map(this::buildResponse)
-                .toList();
+        return responses;
     }
 
     private CollectivityResponse buildResponse(Collectivity collectivity) {
         return CollectivityResponse.builder()
-                .id(String.valueOf(collectivity.getId()))
+                .id(collectivity.getId()) // Plus de String.valueOf()
                 .location(collectivity.getLocation())
                 .structure(collectivity.getStructure())
                 .members(collectivity.getMembers())
@@ -110,18 +106,34 @@ public class CollectivityService {
         return "Collectivité de " + locationName + " " + UUID.randomUUID().toString().substring(0, 4);
     }
 
-    public Collectivity getById(Integer id) {
+    public Collectivity getById(String id) {
+        // Nettoyage : plus de conversion Integer -> String
         Collectivity collectivity = repository.findById(id);
         if (collectivity == null) {
-            // Optionnel : Tu peux créer une classe ResourceNotFoundException pour un retour 404 propre
             throw new RuntimeException("Collectivité non trouvée pour l'ID : " + id);
         }
         return collectivity;
     }
 
-    public List<FinancialAccount> getFinancialAccountsWithBalance(Integer id, String atDate) {
+    public List<FinancialAccount> getFinancialAccountsWithBalance(String id, String atDate) {
+        // Validation de l'existence de la collectivité
         this.getById(id);
 
         return repository.findAccountsWithBalance(id, atDate);
+    }
+
+    public List<MembershipFee> createMembershipFees(String collectivityId, List<CreateMembershipFee> fees) throws BadRequestException {
+        // 1. Vérifier si la collectivité existe
+        if (!repository.existsById(collectivityId)) {
+            throw new NotFoundException("Collectivité introuvable");
+        }
+        // 2. Valider les données
+        feeValidator.validate(fees);
+        // 3. Sauvegarder
+        return feeRepository.saveAll(collectivityId, fees);
+    }
+
+    public List<MembershipFee> getMembershipFees(String collectivityId) {
+        return feeRepository.findByCollectivityId(collectivityId);
     }
 }

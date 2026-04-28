@@ -16,10 +16,11 @@ import java.util.List;
 @Builder
 @Data
 public class CreateMember {
-
+    private String id;
     private String firstName;
     private String lastName;
     private LocalDate birthDate;
+    private java.time.Instant enrolmentDate;
     private Gender gender;
     private String address;
     private String profession;
@@ -28,8 +29,8 @@ public class CreateMember {
 
     private CollectivityOccupation occupation;
 
-    private Integer collectivityIdentifier;
-    private List<Integer> referees;
+    private String collectivityIdentifier;
+    private List<String> referees;
 
     private boolean registrationFeePaid;
     private boolean membershipDuesPaid;

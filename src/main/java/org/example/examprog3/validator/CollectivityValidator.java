@@ -26,8 +26,7 @@ public class CollectivityValidator {
             throw new BadRequestException("Collectivity must have location");
         }
 
-
-        List<String> memberIds = createCollectivity.getMemberIds();
+        List<String> memberIds = createCollectivity.getMembers();
         if (memberIds == null || memberIds.isEmpty()) {
             throw new BadRequestException("Collectivity must have members");
         }
@@ -56,13 +55,12 @@ public class CollectivityValidator {
         validateStructure(createCollectivity.getStructure(), memberIds);
     }
 
-
     private void validateAllMembersExist(List<String> memberIds) {
-        List<Integer> missingIds = new ArrayList<>();
+        List<String> missingIds = new ArrayList<>(); // Liste de String maintenant
 
         for (String id : memberIds) {
-            if (!memberRepository.existsById(Integer.valueOf(id))) {
-                missingIds.add(Integer.valueOf(id));
+            if (!memberRepository.existsById(id)) {
+                missingIds.add(id);
             }
         }
 
@@ -70,8 +68,6 @@ public class CollectivityValidator {
             throw new NotFoundException("Members not found with IDs: " + missingIds);
         }
     }
-
-
 
     private void validateStructure(CreateStructure structure, List<String> memberIds) throws BadRequestException {
         if (structure == null) {
@@ -91,26 +87,29 @@ public class CollectivityValidator {
             throw new BadRequestException("Secretary ID is required");
         }
 
-        validateStructureMemberExists(Integer.valueOf(structure.getPresidentId()), "President");
-        validateStructureMemberExists(Integer.valueOf(structure.getVicePresidentId()), "Vice President");
-        validateStructureMemberExists(Integer.valueOf(structure.getTreasurerId()), "Treasurer");
-        validateStructureMemberExists(Integer.valueOf(structure.getSecretaryId()), "Secretary");
+        // Utilisation directe des String
+        validateStructureMemberExists(structure.getPresidentId(), "President");
+        validateStructureMemberExists(structure.getVicePresidentId(), "Vice President");
+        validateStructureMemberExists(structure.getTreasurerId(), "Treasurer");
+        validateStructureMemberExists(structure.getSecretaryId(), "Secretary");
 
-        validateStructureMemberInList(Integer.valueOf(structure.getPresidentId()), memberIds, "President");
-        validateStructureMemberInList(Integer.valueOf(structure.getVicePresidentId()), memberIds, "Vice President");
-        validateStructureMemberInList(Integer.valueOf(structure.getTreasurerId()), memberIds, "Treasurer");
-        validateStructureMemberInList(Integer.valueOf(structure.getSecretaryId()), memberIds, "Secretary");
+        validateStructureMemberInList(structure.getPresidentId(), memberIds, "President");
+        validateStructureMemberInList(structure.getVicePresidentId(), memberIds, "Vice President");
+        validateStructureMemberInList(structure.getTreasurerId(), memberIds, "Treasurer");
+        validateStructureMemberInList(structure.getSecretaryId(), memberIds, "Secretary");
 
         validateNoDuplicateRoles(structure);
     }
 
-    private void validateStructureMemberExists(Integer memberId, String role) {
-        if (memberRepository.existsById(memberId)) {
+    private void validateStructureMemberExists(String memberId, String role) {
+        // Correction de la logique : !exists (si n'existe pas -> exception)
+        if (!memberRepository.existsById(memberId)) {
             throw new NotFoundException(role + " not found with ID: " + memberId);
         }
     }
 
-    private void validateStructureMemberInList(Integer memberId, List<String> memberIds, String role) throws BadRequestException {
+    private void validateStructureMemberInList(String memberId, List<String> memberIds, String role) throws BadRequestException {
+        // contains() fonctionne parfaitement sur les String
         if (!memberIds.contains(memberId)) {
             throw new BadRequestException(role + " must be one of the collectivity members");
         }

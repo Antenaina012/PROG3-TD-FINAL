@@ -20,12 +20,13 @@ public class FederationRepository {
     private final Connection connection;
 
     public Optional<Federation> findFederation() {
+        // Mise à jour des noms de colonnes et tables
         String sql = """
             SELECT 
                 f.id as federation_id,
                 f.cotisation_percentage,
-                mf.id_member,
-                mf.occupation,
+                mf.member_id,
+                mf.role as occupation,
                 m.first_name,
                 m.last_name,
                 m.birth_date,
@@ -36,8 +37,8 @@ public class FederationRepository {
                 m.profession,
                 m.gender
             FROM federation f
-            LEFT JOIN mandate_federation mf ON f.id = mf.id_federation AND mf.end_date IS NULL
-            LEFT JOIN member m ON mf.id_member = m.id
+            LEFT JOIN federation_membership mf ON f.id = mf.federation_id AND mf.end_date IS NULL
+            LEFT JOIN member m ON mf.member_id = m.id
             ORDER BY f.id
         """;
 
@@ -50,21 +51,28 @@ public class FederationRepository {
             while (rs.next()) {
                 if (federation == null) {
                     federation = Federation.builder()
-                            .id(String.valueOf(rs.getInt("federation_id")))
+                            .id(rs.getString("federation_id"))
                             .contributionPercentage(rs.getDouble("cotisation_percentage"))
                             .build();
                 }
 
-                int memberId = rs.getInt("id_member");
-                if (memberId > 0) {
+                String memberId = rs.getString("member_id");
+                if (memberId != null) {
                     Member member = mapResultSetToMember(rs);
                     String occupation = rs.getString("occupation");
 
-                    switch (FederationOccupation.valueOf(occupation)) {
-                        case PRESIDENT -> structure.setPresident(member);
-                        case VICE_PRESIDENT -> structure.setVicePresident(member);
-                        case TREASURER -> structure.setTreasurer(member);
-                        case SECRETARY -> structure.setSecretary(member);
+                    if (occupation != null) {
+                        // Utilisation du try-catch ou switch pour mapper les rôles
+                        try {
+                            switch (FederationOccupation.valueOf(occupation)) {
+                                case PRESIDENT -> structure.setPresident(member);
+                                case VICE_PRESIDENT -> structure.setVicePresident(member);
+                                case TREASURER -> structure.setTreasurer(member);
+                                case SECRETARY -> structure.setSecretary(member);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            // Log ou gestion si le rôle en base ne match pas l'Enum Java
+                        }
                     }
                 }
             }
@@ -82,16 +90,17 @@ public class FederationRepository {
 
     private Member mapResultSetToMember(ResultSet rs) throws SQLException {
         return Member.builder()
-                .id(String.valueOf(rs.getInt("id_member")))
+                .id(rs.getString("member_id"))
                 .firstName(rs.getString("first_name"))
                 .lastName(rs.getString("last_name"))
-                .birthDate(rs.getDate("birth_date").toLocalDate())
-                .enrolmentDate(rs.getTimestamp("enrolment_date").toInstant())
+                .birthDate(rs.getDate("birth_date") != null ? rs.getDate("birth_date").toLocalDate() : null)
+                .enrolmentDate(rs.getTimestamp("enrolment_date") != null ? rs.getTimestamp("enrolment_date").toInstant() : null)
                 .address(rs.getString("address"))
                 .email(rs.getString("email"))
                 .phoneNumber(rs.getString("phone_number"))
                 .profession(rs.getString("profession"))
-                .gender(Gender.valueOf(rs.getString("gender")))
+                // Gestion sécurisée de l'Enum Gender
+                .gender(rs.getString("gender") != null ? Gender.valueOf(rs.getString("gender")) : null)
                 .build();
     }
 }

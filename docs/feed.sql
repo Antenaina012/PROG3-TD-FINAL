@@ -1,38 +1,28 @@
--- I. LES COLLECTIVITÉS
-INSERT INTO collectivity (id, name, unique_number, speciality, creation_date) VALUES
-                                                                                  ('col-1', 'Collectivité de Riziculture', 'COL-001', 'Riziculture', '2025-01-01'),
-                                                                                  ('col-2', 'Collectivité Maraîchère', 'COL-002', 'Maraîchage', '2026-01-01');
+INSERT INTO collectivity (id, unique_number, name, location, speciality) VALUES
+                                                                             ('col-1', '1', 'Mpanorina', 'Ambatondrazaka', 'Riziculture'),
+                                                                             ('col-2', '2', 'Dobo voalohany', 'Ambatondrazaka', 'Pisciculture'),
+                                                                             ('col-3', '3', 'Tantely mamy', 'Brickaville', 'Apiculture');
 
--- II. LES MEMBRES (Mélange de membres anciens et nouveaux pour les tests)
-INSERT INTO member (id, first_name, last_name, birth_date, gender, registration_date, occupation) VALUES
--- Membres de la Collectivité 2 (Tableau 10)
-('C2-M1', 'Jean', 'Rakoto', '1990-05-15', 'MALE', '2025-01-01', 'PRESIDENT'),
-('C2-M2', 'Lova', 'Andria', '1992-08-20', 'FEMALE', '2025-01-01', 'TREASURER'),
-('C2-M3', 'Sitraka', 'Ranaivo', '1985-02-10', 'MALE', '2025-03-01', 'SECRETARY'),
-('C2-M4', 'Mamy', 'Rasoa', '1988-11-30', 'FEMALE', '2025-06-01', 'VICE_PRESIDENT'),
-('C2-M5', 'Hery', 'Rabe', '1995-04-12', 'MALE', '2025-06-01', 'JUNIOR'),
-('C2-M6', 'Feno', 'Andrianina', '1993-09-05', 'MALE', '2025-07-01', 'SENIOR'),
-('C2-M7', 'Tahina', 'Razafy', '1991-12-25', 'FEMALE', '2026-01-01', 'JUNIOR'),
-('C2-M8', 'Iary', 'Solofo', '1994-02-14', 'MALE', '2026-01-01', 'JUNIOR');
+INSERT INTO member (id, first_name, last_name, birth_date, gender, enrolment_date, address, profession, phone_number, email) VALUES
+                                                                                                                                 ('C1-M1', 'Membre 1', 'Nom 1', '1980-02-01', 'MALE', '2025-01-01', 'Lot II V M Ambato', 'Riziculteur', '0341234567', 'member.1@fed-agri.mg'),
+                                                                                                                                 ('C1-M2', 'Membre 2', 'Nom 2', '1982-03-05', 'MALE', '2025-01-01', 'Lot II F Ambato', 'Agriculteur', '0321234567', 'member.2@fed-agri.mg'),
+                                                                                                                                 ('C1-M3', 'Membre 3', 'Nom 3', '1992-03-10', 'MALE', '2025-01-01', 'Lot II J Ambato', 'Collecteur', '0331234567', 'member.3@fed-agri.mg'),
+                                                                                                                                 ('C1-M4', 'Membre 4', 'Nom 4', '1988-05-22', 'FEMALE', '2025-01-01', 'Lot A K 50 Ambato', 'Distributeur', '0381234567', 'member.4@fed-agri.mg');
 
--- III. LES COMPTES FINANCIERS DE LA COL-2
-INSERT INTO financial_account (id, label, type, collectivity_id) VALUES
-                                                                     ('C2-A-CASH', 'Caisse Centrale', 'CASH', 'col-2'),
-                                                                     ('C2-A-MOBILE-1', 'Compte Mvola Principal', 'MOBILE_MONEY', 'col-2');
+-- Rôles dans Col-1
+INSERT INTO membership (member_id, collectivity_id, role) VALUES
+                                                              ('C1-M1', 'col-1', 'PRESIDENT'),
+                                                              ('C1-M2', 'col-1', 'VICE_PRESIDENT'),
+                                                              ('C1-M3', 'col-1', 'SECRETARY'),
+                                                              ('C1-M4', 'col-1', 'TREASURER');
 
--- IV. LES LIENS D'APPARTENANCE
-INSERT INTO membership (member_id, collectivity_id) VALUES
-                                                        ('C2-M1', 'col-2'), ('C2-M2', 'col-2'), ('C2-M3', 'col-2'), ('C2-M4', 'col-2'),
-                                                        ('C2-M5', 'col-2'), ('C2-M6', 'col-2'), ('C2-M7', 'col-2'), ('C2-M8', 'col-2');
+-- Parrainages Col-1
+INSERT INTO referee (sponsor_id, sponsored_id) VALUES
+                                                   ('C1-M1', 'C1-M3'), ('C1-M2', 'C1-M3'),
+                                                   ('C1-M1', 'C1-M4'), ('C1-M2', 'C1-M4');
 
--- V. TOUTES LES TRANSACTIONS (Paiements du Tableau 10)
--- On utilise le format YYYY-MM-DD pour la date
+INSERT INTO financial_account (id, collectivity_id, type, label, balance) VALUES
+    ('C1-A-CASH', 'col-1', 'CASH', 'Caisse Principale', 0);
+
 INSERT INTO transaction (amount, transaction_date, member_id, collectivity_id, account_id, label) VALUES
-                                                                                                      (60000, '2026-01-01 08:00:00', 'C2-M1', 'col-2', 'C2-A-CASH', 'Droit d''adhésion'),
-                                                                                                      (90000, '2026-01-01 08:15:00', 'C2-M2', 'col-2', 'C2-A-CASH', 'Droit d''adhésion'),
-                                                                                                      (100000, '2026-01-01 08:30:00', 'C2-M3', 'col-2', 'C2-A-CASH', 'Droit d''adhésion'),
-                                                                                                      (100000, '2026-01-01 09:00:00', 'C2-M4', 'col-2', 'C2-A-CASH', 'Cotisation annuelle'),
-                                                                                                      (100000, '2026-01-01 09:30:00', 'C2-M5', 'col-2', 'C2-A-CASH', 'Cotisation annuelle'),
-                                                                                                      (100000, '2026-01-01 10:00:00', 'C2-M6', 'col-2', 'C2-A-CASH', 'Cotisation annuelle'),
-                                                                                                      (40000,  '2026-01-01 10:15:00', 'C2-M7', 'col-2', 'C2-A-MOBILE-1', 'Paiement partiel'),
-                                                                                                      (60000,  '2026-01-01 10:30:00', 'C2-M8', 'col-2', 'C2-A-MOBILE-1', 'Droit d''adhésion');
+    (100000, '2026-01-01 10:00:00', 'C1-M1', 'col-1', 'C1-A-CASH', 'Paiement Janvier');

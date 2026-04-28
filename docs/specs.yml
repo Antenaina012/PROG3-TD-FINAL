@@ -461,7 +461,7 @@ components:
       type: string
       enum:
         - JUNIOR
-        - SENIOR
+        - CONFIRMED
         - SECRETARY
         - TREASURER
         - VICE_PRESIDENT

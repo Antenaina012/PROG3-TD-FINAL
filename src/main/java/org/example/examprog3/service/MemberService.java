@@ -10,6 +10,7 @@ import org.example.examprog3.validator.PaymentValidator;
 import org.example.examprog3.validator.SponsorCountValidator;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -24,15 +25,28 @@ public class MemberService {
 
     public List<MemberResponse> createMembers(List<CreateMember> memberList) {
 
-        memberList.forEach(paymentValidator::validate);
-        memberList.forEach(sponsorCountValidator::validate);
+        memberList.forEach(m -> {
+            // 1. Validation du paiement
+            paymentValidator.validate(m);
 
-        List<Integer> sponsorIds = memberList.stream()
+            // 2. Validation des parrains (Sponsors)
+            // On ne valide QUE si la liste n'est pas vide.
+            // Si elle est vide, c'est un membre fondateur.
+            if (m.getReferees() != null && !m.getReferees().isEmpty()) {
+                sponsorCountValidator.validate(m);
+            }
+        });
+
+        // Extraction des IDs de parrains
+        List<String> sponsorIds = memberList.stream()
+                .filter(m -> m.getReferees() != null)
                 .flatMap(m -> m.getReferees().stream())
                 .distinct()
                 .toList();
 
-        List<Member> sponsors = repository.findByIds(Collections.singletonList(String.valueOf(sponsorIds)));
+        List<Member> sponsors = sponsorIds.isEmpty() ?
+                new ArrayList<>() :
+                repository.findByIds(sponsorIds);
 
         memberList.forEach(m ->
                 collectivityRuleValidator.validate(m, sponsors)
@@ -49,6 +63,7 @@ public class MemberService {
 
     private Member toEntity(CreateMember dto) {
         return Member.builder()
+                .id(dto.getId())
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
                 .birthDate(dto.getBirthDate())
@@ -57,18 +72,18 @@ public class MemberService {
                 .email(dto.getEmail())
                 .phoneNumber(dto.getPhoneNumber())
                 .profession(dto.getProfession())
+                .enrolmentDate(dto.getEnrolmentDate() != null ? dto.getEnrolmentDate() : Instant.now())
                 .build();
     }
 
     private List<MemberResponse> buildResponse(List<Member> saved, List<CreateMember> dtos) {
-
         return IntStream.range(0, saved.size())
                 .mapToObj(i -> {
                     Member m = saved.get(i);
                     CreateMember dto = dtos.get(i);
 
                     return MemberResponse.builder()
-                            .id(String.valueOf(Integer.valueOf(m.getId())))
+                            .id(m.getId())
                             .firstName(m.getFirstName())
                             .lastName(m.getLastName())
                             .birthDate(m.getBirthDate())
@@ -77,7 +92,7 @@ public class MemberService {
                             .profession(m.getProfession())
                             .phoneNumber(m.getPhoneNumber())
                             .email(m.getEmail())
-                            .referees(dto.getReferees())
+                            .referees(dto.getReferees() != null ? dto.getReferees() : new ArrayList<>())
                             .build();
                 })
                 .toList();
