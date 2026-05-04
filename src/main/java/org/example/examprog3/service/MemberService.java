@@ -1,6 +1,10 @@
 package org.example.examprog3.service;
 
-import lombok.AllArgsConstructor;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.IntStream;
+
 import org.example.examprog3.entity.Member;
 import org.example.examprog3.entity.dto.CreateMember;
 import org.example.examprog3.entity.dto.MemberResponse;
@@ -10,9 +14,7 @@ import org.example.examprog3.validator.PaymentValidator;
 import org.example.examprog3.validator.SponsorCountValidator;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.IntStream;
+import lombok.AllArgsConstructor;
 
 @Service
 @AllArgsConstructor
@@ -29,7 +31,7 @@ public class MemberService {
             // 1. Validation du paiement
             paymentValidator.validate(m);
 
-            // 2. Validation des parrains (Sponsors)
+            // 2. Validation des parrains (Sponsors) - nombre minimum
             // On ne valide QUE si la liste n'est pas vide.
             // Si elle est vide, c'est un membre fondateur.
             if (m.getReferees() != null && !m.getReferees().isEmpty()) {
@@ -47,6 +49,12 @@ public class MemberService {
         List<Member> sponsors = sponsorIds.isEmpty() ?
                 new ArrayList<>() :
                 repository.findByIds(sponsorIds);
+
+        // 3. Validation de l'ancienneté des parrains (90 jours minimum)
+        // Selon section B: "Être parrainé par un membre confirmé dont l'ancienneté dépasse les 90 jours"
+        if (!sponsors.isEmpty()) {
+            sponsorCountValidator.validateSponsorSeniority(sponsors);
+        }
 
         memberList.forEach(m ->
                 collectivityRuleValidator.validate(m, sponsors)

@@ -91,7 +91,9 @@ public class CollectivityService {
 
     private CollectivityResponse buildResponse(Collectivity collectivity) {
         return CollectivityResponse.builder()
-                .id(collectivity.getId()) // Plus de String.valueOf()
+                .id(collectivity.getId())
+                .name(collectivity.getName())
+                .number(collectivity.getNumber())
                 .location(collectivity.getLocation())
                 .structure(collectivity.getStructure())
                 .members(collectivity.getMembers())

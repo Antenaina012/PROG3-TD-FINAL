@@ -349,6 +349,8 @@ components:
           type: string
         email:
           type: string
+        profession:
+          type: string
         occupation:
           $ref: '#/components/schemas/MemberOccupation'
 
@@ -359,6 +361,15 @@ components:
       properties:
         collectivityIdentifier:
           type: string
+        referees:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberIdentifier'
+        refereeRelations:
+          type: object
+          additionalProperties:
+            type: string
+          description: Map of referee ID to relationship nature (family, friend, colleague, etc.)
         registrationFeePaid:
           type: boolean
         membershipDuesPaid:

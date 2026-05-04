@@ -1,6 +1,15 @@
 package org.example.examprog3.repository;
 
-import lombok.AllArgsConstructor;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.example.examprog3.entity.Collectivity;
 import org.example.examprog3.entity.FinancialAccount;
 import org.example.examprog3.entity.Member;
@@ -10,12 +19,7 @@ import org.example.examprog3.entity.enums.Gender;
 import org.example.examprog3.entity.enums.PaymentMode;
 import org.springframework.stereotype.Repository;
 
-import java.sql.*;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.Date;
+import lombok.AllArgsConstructor;
 
 @Repository
 @AllArgsConstructor
@@ -78,7 +82,7 @@ public class CollectivityRepository {
     }
 
     public Collectivity findById(String id) {
-        String sql = "SELECT * FROM collectivity WHERE id = ?";
+        String sql = "SELECT id, unique_number, name, location, speciality, federation_approval, authorization_date, creation_date FROM collectivity WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -86,7 +90,7 @@ public class CollectivityRepository {
                     Collectivity collectivity = Collectivity.builder()
                             .id(rs.getString("id"))
                             .name(rs.getString("name"))
-                            .number(rs.getString("unique_number")) // Changement nom colonne
+                            .number(rs.getString("unique_number"))
                             .location(rs.getString("location"))
                             .speciality(rs.getString("speciality"))
                             .federationApproval(rs.getBoolean("federation_approval"))
@@ -101,9 +105,12 @@ public class CollectivityRepository {
     }
 
     private void fetchMembersAndStructure(Collectivity collectivity) {
-        // Mise à jour : table membership, colonnes role et collectivity_id
+        // Requête optimisée - liste explicite des colonnes
         String sql = """
-            SELECT m.*, ms.role FROM membership ms
+            SELECT m.id, m.first_name, m.last_name, m.birth_date, m.gender, 
+                   m.enrolment_date, m.address, m.profession, m.phone_number, m.email,
+                   ms.role 
+            FROM membership ms
             JOIN member m ON ms.member_id = m.id
             WHERE ms.collectivity_id = ? AND ms.end_date IS NULL
         """;
@@ -117,7 +124,13 @@ public class CollectivityRepository {
                         .id(rs.getString("id"))
                         .firstName(rs.getString("first_name"))
                         .lastName(rs.getString("last_name"))
-                        .gender(Gender.valueOf(rs.getString("gender"))) // Attention type ENUM
+                        .birthDate(rs.getDate("birth_date").toLocalDate())
+                        .gender(Gender.valueOf(rs.getString("gender")))
+                        .enrolmentDate(rs.getTimestamp("enrolment_date").toInstant())
+                        .address(rs.getString("address"))
+                        .profession(rs.getString("profession"))
+                        .phoneNumber(rs.getString("phone_number"))
+                        .email(rs.getString("email"))
                         .build();
                 members.add(member);
 

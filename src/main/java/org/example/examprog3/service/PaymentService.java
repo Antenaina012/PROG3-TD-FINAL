@@ -1,8 +1,13 @@
 package org.example.examprog3.service;
 
-import lombok.AllArgsConstructor;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.example.examprog3.entity.Payment;
 import org.example.examprog3.entity.dto.CreateMemberPayment;
+import org.example.examprog3.entity.dto.MemberPaymentResponse;
 import org.example.examprog3.entity.enums.PaymentType;
 import org.example.examprog3.exception.NotFoundException;
 import org.example.examprog3.repository.CollectivityRepository;
@@ -10,10 +15,7 @@ import org.example.examprog3.repository.MemberRepository;
 import org.example.examprog3.repository.PaymentRepository;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
+import lombok.AllArgsConstructor;
 
 @Service
 @AllArgsConstructor
@@ -56,26 +58,36 @@ public class PaymentService {
         payment.setTransactionType(PaymentType.IN); // Toujours 'IN' pour un encaissement
     }
 
-    public List<Payment> processMemberPayments(String memberId, List<CreateMemberPayment> dtos) {
+    public List<MemberPaymentResponse> processMemberPayments(String memberId, List<CreateMemberPayment> dtos) {
         // 1. Vérifier si le membre existe
         if (!memberRepository.existsById(memberId)) {
             throw new NotFoundException("Membre non trouvé");
         }
 
-        List<Payment> savedPayments = new ArrayList<>();
+        List<MemberPaymentResponse> savedPayments = new ArrayList<>();
         for (CreateMemberPayment dto : dtos) {
             Payment payment = Payment.builder()
                     .memberId(memberId)
                     .amount(dto.getAmount())
                     .paymentMode(dto.getPaymentMode())
                     .accountCreditedIdentifier(dto.getAccountCreditedIdentifier())
-                    .membershipFeeIdentifier(dto.getMembershipFeeIdentifier())
+                    .description("Membership fee payment")
                     .transactionDate(new Timestamp(System.currentTimeMillis()))
                     .build();
 
             // 2. Sauvegarder (ceci doit insérer dans la table "transaction")
-            paymentRepository.saveTransaction(payment);
-            savedPayments.add(payment);
+            Payment saved = paymentRepository.saveTransaction(payment);
+            
+            // 3. Mapper vers MemberPaymentResponse selon la spec OpenAPI
+            MemberPaymentResponse response =
+                MemberPaymentResponse.builder()
+                    .id(saved.getId())
+                    .amount(saved.getAmount())
+                    .creationDate(saved.getTransactionDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate())
+                    .paymentMode(saved.getPaymentMode())
+                    .build();
+            
+            savedPayments.add(response);
         }
         return savedPayments;
     }
