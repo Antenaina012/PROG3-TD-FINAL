@@ -61,11 +61,14 @@ public class MemberController {
             List<MemberPaymentResponse> savedPayments = paymentService.processMemberPayments(memberId, payments);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedPayments);
         } catch (IllegalArgumentException e) {
+            // Paramètres invalides → 400 Bad Request
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (NotFoundException e) {
+            // Membre non trouvé → 404 Not Found
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erreur serveur : " + e.getMessage());
+            // Erreur serveur → 500 Internal Server Error
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error: " + e.getMessage());
         }
     }
 }

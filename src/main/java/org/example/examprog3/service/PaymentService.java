@@ -27,7 +27,7 @@ public class PaymentService {
 
     public void processPayments(String collectivityId, List<Payment> payments) {
         if (collectivityRepository.findById(collectivityId) == null) {
-            throw new NotFoundException("Collectivité introuvable ID: " + collectivityId);
+            throw new NotFoundException("Collectivity not found with ID: " + collectivityId);
         }
 
         for (Payment payment : payments) {
@@ -45,12 +45,12 @@ public class PaymentService {
     private void validateAndPrepareTransaction(String collectivityId, Payment payment) {
         // Validation du montant
         if (payment.getAmount() == null || payment.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Le montant doit être strictement supérieur à zéro");
+            throw new IllegalArgumentException("Amount must be strictly greater than zero");
         }
 
         // Validation du mode de paiement
         if (payment.getPaymentMode() == null) {
-            throw new IllegalArgumentException("Le mode de paiement est obligatoire (CASH, BANK_TRANSFER, MOBILE_BANKING)");
+            throw new IllegalArgumentException("Payment mode is required (CASH, BANK_TRANSFER, MOBILE_BANKING)");
         }
 
         // Forcer l'ID de la collectivité (String)
@@ -61,7 +61,7 @@ public class PaymentService {
     public List<MemberPaymentResponse> processMemberPayments(String memberId, List<CreateMemberPayment> dtos) {
         // 1. Vérifier si le membre existe
         if (!memberRepository.existsById(memberId)) {
-            throw new NotFoundException("Membre non trouvé");
+            throw new NotFoundException("Member not found with ID: " + memberId);
         }
 
         List<MemberPaymentResponse> savedPayments = new ArrayList<>();

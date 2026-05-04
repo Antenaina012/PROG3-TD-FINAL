@@ -20,7 +20,8 @@ public class MembershipFeeRepository {
     private final Connection connection;
 
     public List<MembershipFee> saveAll(String collectivityId, List<CreateMembershipFee> fees) {
-        String sql = "INSERT INTO membership_fee (id, collectivity_id, label, amount, frequency) VALUES (?, ?, ?, ?, ?)";
+        // Requête optimisée - liste explicite des colonnes incluant tous les champs
+        String sql = "INSERT INTO membership_fee (id, collectivity_id, label, amount, frequency, eligible_from, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
         List<MembershipFee> savedFees = new ArrayList<>();
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
@@ -31,6 +32,17 @@ public class MembershipFeeRepository {
                 pstmt.setString(3, fee.getLabel());
                 pstmt.setDouble(4, fee.getAmount());
                 pstmt.setString(5, fee.getFrequency().name());
+                
+                // Handle nullable eligibleFrom field
+                if (fee.getEligibleFrom() != null) {
+                    pstmt.setDate(6, java.sql.Date.valueOf(fee.getEligibleFrom()));
+                } else {
+                    pstmt.setNull(6, java.sql.Types.DATE);
+                }
+                
+                // Default status is ACTIVE
+                pstmt.setString(7, "ACTIVE");
+                
                 pstmt.addBatch();
 
                 savedFees.add(MembershipFee.builder()
@@ -39,6 +51,8 @@ public class MembershipFeeRepository {
                         .label(fee.getLabel())
                         .amount(fee.getAmount())
                         .frequency(fee.getFrequency())
+                        .eligibleFrom(fee.getEligibleFrom())
+                        .status(org.example.examprog3.entity.enums.ActivityStatus.ACTIVE)
                         .build());
             }
             pstmt.executeBatch();
@@ -49,21 +63,36 @@ public class MembershipFeeRepository {
     }
 
     public List<MembershipFee> findByCollectivityId(String collectivityId) {
-        String sql = "SELECT * FROM membership_fee WHERE collectivity_id = ?";
+        // Requête optimisée - liste explicite des colonnes
+        String sql = "SELECT id, collectivity_id, label, amount, frequency, eligible_from, status FROM membership_fee WHERE collectivity_id = ?";
         List<MembershipFee> fees = new ArrayList<>();
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, collectivityId);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
-                fees.add(MembershipFee.builder()
+                MembershipFee fee = MembershipFee.builder()
                         .id(rs.getString("id"))
+                        .collectivityId(rs.getString("collectivity_id"))
                         .label(rs.getString("label"))
                         .amount(rs.getDouble("amount"))
                         .frequency(Frequency.valueOf(rs.getString("frequency")))
-                        .build());
+                        .build();
+                
+                // Handle nullable fields
+                java.sql.Date eligibleFrom = rs.getDate("eligible_from");
+                if (eligibleFrom != null) {
+                    fee.setEligibleFrom(eligibleFrom.toLocalDate());
+                }
+                
+                String status = rs.getString("status");
+                if (status != null) {
+                    fee.setStatus(org.example.examprog3.entity.enums.ActivityStatus.valueOf(status));
+                }
+                
+                fees.add(fee);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Erreur lors de la récupération des frais d'adhésion", e);
         }
         return fees;
     }

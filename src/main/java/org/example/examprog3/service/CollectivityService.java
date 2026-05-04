@@ -1,6 +1,9 @@
 package org.example.examprog3.service;
 
-import lombok.AllArgsConstructor;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.apache.coyote.BadRequestException;
 import org.example.examprog3.entity.Collectivity;
 import org.example.examprog3.entity.FinancialAccount;
@@ -15,9 +18,7 @@ import org.example.examprog3.validator.CollectivityValidator;
 import org.example.examprog3.validator.MembershipFeeValidator;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import lombok.AllArgsConstructor;
 
 @Service
 @AllArgsConstructor
@@ -33,15 +34,15 @@ public class CollectivityService {
         Collectivity collectivity = repository.findById(id);
 
         if (collectivity == null) {
-            throw new RuntimeException("Collectivité introuvable ID: " + id);
+            throw new NotFoundException("Collectivity not found with ID: " + id);
         }
 
         if (isIdentityFixed(collectivity)) {
-            throw new IllegalStateException("L'identité est déjà fixée et ne peut plus être modifiée.");
+            throw new IllegalStateException("Identity is already fixed and cannot be modified");
         }
 
         if (repository.existsByName(newName)) {
-            throw new IllegalArgumentException("Le nom '" + newName + "' est déjà utilisé.");
+            throw new IllegalArgumentException("Name '" + newName + "' is already in use");
         }
 
         // Plus de Integer.valueOf(id)
@@ -112,7 +113,7 @@ public class CollectivityService {
         // Nettoyage : plus de conversion Integer -> String
         Collectivity collectivity = repository.findById(id);
         if (collectivity == null) {
-            throw new RuntimeException("Collectivité non trouvée pour l'ID : " + id);
+            throw new NotFoundException("Collectivity not found with ID: " + id);
         }
         return collectivity;
     }
@@ -127,7 +128,7 @@ public class CollectivityService {
     public List<MembershipFee> createMembershipFees(String collectivityId, List<CreateMembershipFee> fees) throws BadRequestException {
         // 1. Vérifier si la collectivité existe
         if (!repository.existsById(collectivityId)) {
-            throw new NotFoundException("Collectivité introuvable");
+            throw new NotFoundException("Collectivity not found with ID: " + collectivityId);
         }
         // 2. Valider les données
         feeValidator.validate(fees);
