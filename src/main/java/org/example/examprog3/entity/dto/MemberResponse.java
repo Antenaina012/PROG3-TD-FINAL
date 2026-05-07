@@ -1,16 +1,20 @@
 package org.example.examprog3.entity.dto;
 
+import com.Prog3.AgricultureCollectivity.entity.enums.Gender;
+import com.Prog3.AgricultureCollectivity.entity.enums.MemberOccupation;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.example.examprog3.entity.enums.Gender;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MemberResponse {
-
     private String id;
     private String firstName;
     private String lastName;
@@ -20,6 +24,6 @@ public class MemberResponse {
     private String profession;
     private String phoneNumber;
     private String email;
-
-    private List<String> referees;
+    private MemberOccupation occupation;
+    private List<MemberResponse> referees;
 }

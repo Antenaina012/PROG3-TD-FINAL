@@ -12,10 +12,11 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MemberPaymentResponse {
+public class CollectivityTransactionResponse {
     private String id;
-    private Integer amount;
+    private LocalDate creationDate;
+    private Double amount;
     private PaymentMode paymentMode;
     private FinancialAccountResponse accountCredited;
-    private LocalDate creationDate;
+    private MemberResponse memberDebited;
 }

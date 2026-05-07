@@ -1,5 +1,7 @@
 package org.example.examprog3.entity.enums;
 
 public enum MobileBankingService {
-    AIRTEL_MONEY, MVOLA, ORANGE_MONEY
+    ORANGE_MONEY,
+    MVOLA,
+    AIRTEL_MONEY
 }

@@ -1,5 +1,6 @@
 package org.example.examprog3.entity.dto;
 
+import com.Prog3.AgricultureCollectivity.entity.enums.ActivityStatus;
 import com.Prog3.AgricultureCollectivity.entity.enums.Frequency;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,9 +13,11 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateMembershipFee {
+public class MembershipFeeResponse {
+    private String id;
     private LocalDate eligibleFrom;
     private Frequency frequency;
     private Double amount;
     private String label;
+    private ActivityStatus status;
 }
