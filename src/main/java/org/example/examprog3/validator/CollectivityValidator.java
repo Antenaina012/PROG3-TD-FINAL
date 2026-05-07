@@ -1,25 +1,96 @@
 package org.example.examprog3.validator;
 
+import lombok.AllArgsConstructor;
 import org.example.examprog3.entity.Member;
 import org.example.examprog3.entity.dto.CreateCollectivity;
+import org.example.examprog3.entity.dto.CreateCollectivityStructure;
+import org.example.examprog3.exception.BadRequestException;
+import org.example.examprog3.exception.NotFoundException;
+import org.example.examprog3.repository.MemberRepository;
 import org.springframework.stereotype.Component;
-import java.time.LocalDate;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@AllArgsConstructor
 public class CollectivityValidator {
-    public void validateCreation(CreateCollectivity dto, List<Member> members) {
-        if (!dto.federationApproval()) {
-            throw new RuntimeException("Federation approval is required.");
+    private final MemberRepository memberRepository;
+
+    public void validateCollectivityCreation(CreateCollectivity createCollectivity) {
+        if (!createCollectivity.isFederationApproval()) {
+            throw new BadRequestException("Collectivity must have federation approval");
         }
-        if (members == null || members.size() < 10) {
-            throw new RuntimeException("At least 10 members are required.");
+
+        if (createCollectivity.getLocation() == null || createCollectivity.getLocation().trim().isEmpty()) {
+            throw new BadRequestException("Collectivity must have location");
         }
-        long seniors = members.stream()
-                .filter(m -> m.getJoinDate() != null && m.getJoinDate().isBefore(LocalDate.now().minusMonths(6)))
-                .count();
-        if (seniors < 5) {
-            throw new RuntimeException("At least 5 members must have 6 months of seniority.");
+
+        List<String> memberIds = createCollectivity.getMembers();
+        if (memberIds == null || memberIds.isEmpty()) {
+            throw new BadRequestException("Collectivity must have members");
+        }
+
+        validateAllMembersExist(memberIds);
+
+        List<Member> members = memberRepository.findByIds(memberIds);
+        if (members.size() < 10) {
+            throw new BadRequestException(
+                    String.format("Collectivity must have at least 10 members (currently has %d)", members.size())
+            );
+        }
+
+        validateStructure(createCollectivity.getStructure(), memberIds);
+    }
+
+    private void validateAllMembersExist(List<String> memberIds) {
+        List<String> missingIds = new ArrayList<>();
+        for (String id : memberIds) {
+            if (!memberRepository.existsById(id)) {
+                missingIds.add(id);
+            }
+        }
+        if (!missingIds.isEmpty()) {
+            throw new NotFoundException("Members not found with IDs: " + missingIds);
+        }
+    }
+
+    private void validateStructure(CreateCollectivityStructure structure, List<String> memberIds) {
+        if (structure == null) {
+            throw new BadRequestException("Collectivity structure is required");
+        }
+
+        validateStructureMember(structure.getPresident(), "President", memberIds);
+        validateStructureMember(structure.getVicePresident(), "Vice President", memberIds);
+        validateStructureMember(structure.getTreasurer(), "Treasurer", memberIds);
+        validateStructureMember(structure.getSecretary(), "Secretary", memberIds);
+
+        validateNoDuplicateRoles(structure);
+    }
+
+    private void validateStructureMember(String memberId, String role, List<String> memberIds) {
+        if (memberId == null) {
+            throw new BadRequestException(role + " ID is required");
+        }
+        if (!memberRepository.existsById(memberId)) {
+            throw new NotFoundException(role + " not found with ID: " + memberId);
+        }
+        if (!memberIds.contains(memberId)) {
+            throw new BadRequestException(role + " must be one of the collectivity members");
+        }
+    }
+
+    private void validateNoDuplicateRoles(CreateCollectivityStructure structure) {
+        List<String> roleIds = List.of(
+                structure.getPresident(),
+                structure.getVicePresident(),
+                structure.getTreasurer(),
+                structure.getSecretary()
+        );
+
+        long distinctCount = roleIds.stream().distinct().count();
+        if (distinctCount != 4) {
+            throw new BadRequestException("The same member cannot hold multiple specific posts");
         }
     }
 }

@@ -1,12 +1,20 @@
 package org.example.examprog3.entity.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
-public record CreateCollectivity(
-        String name,
-        String location,
-        String specialty,
-        List<String> memberIds,
-        boolean federationApproval,
-        CreateCollectivityStructure structure
-) {}
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateCollectivity {
+    private String location;
+    private String speciality;
+    private List<String> members;
+    private boolean federationApproval;
+    private CreateCollectivityStructure structure;
+}

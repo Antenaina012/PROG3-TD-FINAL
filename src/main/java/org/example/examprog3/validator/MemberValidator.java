@@ -1,30 +1,104 @@
 package org.example.examprog3.validator;
 
+import lombok.AllArgsConstructor;
 import org.example.examprog3.entity.Member;
 import org.example.examprog3.entity.dto.CreateMember;
-import org.example.examprog3.exeption.InsufficientSponsorCount;
-import org.example.examprog3.exeption.PaymentException;
+import org.example.examprog3.exception.BadRequestException;
+import org.example.examprog3.exception.InsufficientSponsorCount;
+import org.example.examprog3.exception.NotFoundException;
+import org.example.examprog3.repository.MemberRepository;
 import org.springframework.stereotype.Component;
+
 import java.util.List;
 
 @Component
+@AllArgsConstructor
 public class MemberValidator {
-    public void validateAdmission(CreateMember dto, List<Member> referees) {
-        if (referees == null || referees.size() < 2) {
-            throw new InsufficientSponsorCount("Admission requires at least 2 confirmed referees.");
+    private final MemberRepository memberRepository;
+
+    public void validate(CreateMember dto) {
+        // Validate required personal information
+        if (dto.getFirstName() == null || dto.getFirstName().trim().isEmpty()) {
+            throw new BadRequestException("First name is required");
+        }
+        if (dto.getLastName() == null || dto.getLastName().trim().isEmpty()) {
+            throw new BadRequestException("Last name is required");
+        }
+        if (dto.getBirthDate() == null) {
+            throw new BadRequestException("Birth date is required");
+        }
+        if (dto.getGender() == null) {
+            throw new BadRequestException("Gender is required");
+        }
+        if (dto.getAddress() == null || dto.getAddress().trim().isEmpty()) {
+            throw new BadRequestException("Address is required");
+        }
+        if (dto.getProfession() == null || dto.getProfession().trim().isEmpty()) {
+            throw new BadRequestException("Profession is required");
+        }
+        if (dto.getPhoneNumber() == null) {
+            throw new BadRequestException("Phone number is required");
+        }
+        if (dto.getEmail() == null || dto.getEmail().trim().isEmpty()) {
+            throw new BadRequestException("Email is required");
+        }
+        if (dto.getCollectivityIdentifier() == null || dto.getCollectivityIdentifier().trim().isEmpty()) {
+            throw new BadRequestException("Collectivity identifier is required");
         }
 
-        long internal = referees.stream()
-                .filter(r -> r.getCollectivity() != null && r.getCollectivity().getId().equals(dto.collectivityId()))
-                .count();
-        long external = referees.size() - internal;
-
-        if (internal < external) {
-            throw new InsufficientSponsorCount("Number of internal referees must be >= external ones.");
+        // Validate registration fee payment
+        if (!dto.isRegistrationFeePaid()) {
+            throw new BadRequestException("Registration fee must be paid (50,000 MGA)");
         }
 
-        if (!dto.registrationFeePaid() || !dto.membershipDuesPaid()) {
-            throw new PaymentException("Registration fees and annual dues must be fully paid.");
+        // Validate membership dues payment
+        if (!dto.isMembershipDuesPaid()) {
+            throw new BadRequestException("Membership dues must be paid");
+        }
+
+        // Validate referees - at least 2 required per spec
+        if (dto.getReferees() == null || dto.getReferees().size() < 2) {
+            throw new BadRequestException("At least 2 referees are required for admission");
+        }
+
+        // Validate each referee exists
+        for (String refereeId : dto.getReferees()) {
+            if (!memberRepository.existsById(refereeId)) {
+                throw new NotFoundException("Referee not found with ID: " + refereeId);
+            }
+        }
+
+        // Validate referee rule per spec:
+        // Number of referees from target collectivity must be >= referees from other collectivities
+        List<Member> referees = memberRepository.findByIds(dto.getReferees());
+
+        int inTargetCollectivity = 0;
+        int inOtherCollectivities = 0;
+
+        for (Member referee : referees) {
+            List<String> refereeCollectivities = memberRepository.findCollectivityIdsByMemberId(referee.getId());
+
+            if (refereeCollectivities.contains(dto.getCollectivityIdentifier())) {
+                inTargetCollectivity++;
+            } else {
+                inOtherCollectivities++;
+            }
+        }
+
+        if (inTargetCollectivity < inOtherCollectivities) {
+            throw new InsufficientSponsorCount(
+                    String.format("%s %s does not satisfy collectivity sponsor rule. " +
+                                    "Requires at least as many referees from target collectivity (%d) as from other collectivities (%d)",
+                            dto.getFirstName(), dto.getLastName(), inTargetCollectivity, inOtherCollectivities)
+            );
+        }
+
+        // Verify at least 2 valid referees (senior members or from target collectivity)
+        if (inTargetCollectivity < 1) {
+            throw new InsufficientSponsorCount(
+                    String.format("%s %s must have at least 1 referee from the target collectivity",
+                            dto.getFirstName(), dto.getLastName())
+            );
         }
     }
 }

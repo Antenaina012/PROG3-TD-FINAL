@@ -1,17 +1,26 @@
 package org.example.examprog3.entity;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Collectivity {
     private String id;
+    private String number;
     private String name;
+    private String speciality;
+    private LocalDate creationDatetime;
+    private boolean federationApproval;
+    private LocalDate authorizationDate;
     private String location;
-    private String specialty;
-    private LocalDate creationDate;
+    private Structure structure;
+    private List<Member> members;
 }

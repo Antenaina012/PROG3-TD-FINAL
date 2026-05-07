@@ -1,8 +1,17 @@
 package org.example.examprog3.entity.dto;
 
-public record CreateCollectivityStructure(
-        String presidentId,
-        String vicePresidentId,
-        String treasurerId,
-        String secretaryId
-) {}
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateCollectivityStructure {
+    private String president;
+    private String vicePresident;
+    private String treasurer;
+    private String secretary;
+}
