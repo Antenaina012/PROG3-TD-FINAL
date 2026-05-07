@@ -1,142 +1,206 @@
 package org.example.examprog3.service;
 
+import com.Prog3.AgricultureCollectivity.entity.*;
+import com.Prog3.AgricultureCollectivity.entity.dto.*;
+import com.Prog3.AgricultureCollectivity.exception.NotFoundException;
+import com.Prog3.AgricultureCollectivity.mapper.Mapper;
+import com.Prog3.AgricultureCollectivity.repository.CollectivityRepository;
+import com.Prog3.AgricultureCollectivity.repository.CotisationPlanRepository;
+import com.Prog3.AgricultureCollectivity.validator.CollectivityValidator;
+import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-
-import org.apache.coyote.BadRequestException;
-import org.example.examprog3.entity.Collectivity;
-import org.example.examprog3.entity.FinancialAccount;
-import org.example.examprog3.entity.MembershipFee;
-import org.example.examprog3.entity.dto.CollectivityResponse;
-import org.example.examprog3.entity.dto.CreateCollectivity;
-import org.example.examprog3.entity.dto.CreateMembershipFee;
-import org.example.examprog3.exception.NotFoundException;
-import org.example.examprog3.repository.CollectivityRepository;
-import org.example.examprog3.repository.MembershipFeeRepository;
-import org.example.examprog3.validator.CollectivityValidator;
-import org.example.examprog3.validator.MembershipFeeValidator;
-import org.springframework.stereotype.Service;
-
-import lombok.AllArgsConstructor;
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
 public class CollectivityService {
-
     private final CollectivityRepository repository;
+    private final CotisationPlanRepository cotisationPlanRepository;
+    private final Mapper mapper;
     private final CollectivityValidator validator;
-    private final MembershipFeeRepository feeRepository;
-    private final MembershipFeeValidator feeValidator;
 
-    public Collectivity assignIdentity(String id, String newNumber, String newName) {
-        // Utilisation directe du String id
-        Collectivity collectivity = repository.findById(id);
+    public List<CollectivityResponse> createCollectivities(List<CreateCollectivity> createCollectivities) {
+        List<Collectivity> collectivitiesToSave = new ArrayList<>();
+        List<List<String>> memberIdsList = new ArrayList<>();
+        List<String> presidentIds = new ArrayList<>();
+        List<String> vicePresidentIds = new ArrayList<>();
+        List<String> treasurerIds = new ArrayList<>();
+        List<String> secretaryIds = new ArrayList<>();
 
-        if (collectivity == null) {
-            throw new NotFoundException("Collectivity not found with ID: " + id);
-        }
-
-        if (isIdentityFixed(collectivity)) {
-            throw new IllegalStateException("Identity is already fixed and cannot be modified");
-        }
-
-        if (repository.existsByName(newName)) {
-            throw new IllegalArgumentException("Name '" + newName + "' is already in use");
-        }
-
-        // Plus de Integer.valueOf(id)
-        repository.updateIdentity(id, newNumber, newName);
-
-        return repository.findById(id);
-    }
-
-    private boolean isIdentityFixed(Collectivity c) {
-        return (c.getNumber() != null && !c.getNumber().isBlank()) ||
-                (c.getName() != null && !c.getName().isBlank());
-    }
-
-    public List<CollectivityResponse> createCollectivities(List<CreateCollectivity> createRequests) throws BadRequestException {
-        List<CollectivityResponse> responses = new ArrayList<>();
-
-        for (CreateCollectivity request : createRequests) {
-            // 1. Validation
+        for (CreateCollectivity request : createCollectivities) {
             validator.validateCollectivityCreation(request);
 
-            // 2. Construction de l'objet Collectivity (Données du PDF)
             Collectivity collectivity = Collectivity.builder()
-                    .id(request.getId())
-                    .number(request.getNumber())
-                    .name(request.getName())
-                    .location(request.getLocation())
-                    .speciality(request.getSpeciality())
+                    .speciality(request.getSpeciality() != null ? request.getSpeciality() : "Agriculture")
                     .federationApproval(request.isFederationApproval())
+                    .authorizationDate(LocalDate.now())
+                    .location(request.getLocation())
                     .build();
 
-            // 3. Appel du SAVE individuel (IMPORTANT)
-            // Ici on passe UN id de président, pas une liste.
-            Collectivity saved = repository.saveAll(
-                    collectivity,
-                    request.getMembers(), // C'est une List<String> pour un seul membre
-                    request.getStructure().getPresidentId(), // C'est un String
-                    request.getStructure().getVicePresidentId(), // C'est un String
-                    request.getStructure().getTreasurerId(), // C'est un String
-                    request.getStructure().getSecretaryId() // C'est un String
-            );
-
-            responses.add(buildResponse(saved));
+            collectivitiesToSave.add(collectivity);
+            memberIdsList.add(request.getMembers());
+            presidentIds.add(request.getStructure().getPresident());
+            vicePresidentIds.add(request.getStructure().getVicePresident());
+            treasurerIds.add(request.getStructure().getTreasurer());
+            secretaryIds.add(request.getStructure().getSecretary());
         }
 
-        return responses;
+        List<Collectivity> savedCollectivities = repository.saveAll(
+                collectivitiesToSave, memberIdsList, presidentIds,
+                vicePresidentIds, treasurerIds, secretaryIds
+        );
+
+        return savedCollectivities.stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
-    private CollectivityResponse buildResponse(Collectivity collectivity) {
-        return CollectivityResponse.builder()
-                .id(collectivity.getId())
-                .name(collectivity.getName())
-                .number(collectivity.getNumber())
-                .location(collectivity.getLocation())
-                .structure(collectivity.getStructure())
-                .members(collectivity.getMembers())
-                .build();
-    }
+    public CollectivityResponse assignIdentity(String id, CollectivityInformation request) {
+        if (request.getNumber() == null || request.getNumber().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Number is required");
+        }
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name is required");
+        }
 
-    private String generateCollectivityNumber() {
-        return "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    private String generateCollectivityName(String locationName) {
-        return "Collectivité de " + locationName + " " + UUID.randomUUID().toString().substring(0, 4);
-    }
-
-    public Collectivity getById(String id) {
-        // Nettoyage : plus de conversion Integer -> String
         Collectivity collectivity = repository.findById(id);
         if (collectivity == null) {
-            throw new NotFoundException("Collectivity not found with ID: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Collectivity not found with id: " + id);
+        }
+
+        if (collectivity.getName() != null && !collectivity.getName().isBlank()
+                && collectivity.getNumber() != null && !collectivity.getNumber().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collectivity identity already assigned and cannot be modified");
+        }
+
+        if (repository.existsByNumber(request.getNumber())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collectivity number already exists: " + request.getNumber());
+        }
+        if (repository.existsByName(request.getName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Collectivity name already exists: " + request.getName());
+        }
+
+        repository.assignIdentity(id, request.getNumber(), request.getName());
+        Collectivity updated = repository.findById(id);
+        return mapper.toResponse(updated);
+    }
+
+    public Collectivity getCollectivityById(String id) {
+        Collectivity collectivity = repository.findById(id);
+        if (collectivity == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Collectivity not found with id: " + id);
         }
         return collectivity;
     }
 
-    public List<FinancialAccount> getFinancialAccountsWithBalance(String id, String atDate) {
-        // Validation de l'existence de la collectivité
-        this.getById(id);
-
-        return repository.findAccountsWithBalance(id, atDate);
-    }
-
-    public List<MembershipFee> createMembershipFees(String collectivityId, List<CreateMembershipFee> fees) throws BadRequestException {
-        // 1. Vérifier si la collectivité existe
-        if (!repository.existsById(collectivityId)) {
-            throw new NotFoundException("Collectivity not found with ID: " + collectivityId);
+    public List<CollectivityTransactionResponse> getCollectivityTransactions(
+            String id, Instant from, Instant to) {
+        Collectivity collectivity = repository.findById(id);
+        if (collectivity == null) {
+            throw new NotFoundException("Collectivity not found with id: " + id);
         }
-        // 2. Valider les données
-        feeValidator.validate(fees);
-        // 3. Sauvegarder
-        return feeRepository.saveAll(collectivityId, fees);
+
+        if (from.isAfter(to)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "'from' date must be before or equal to 'to' date");
+        }
+
+        List<Transaction> transactions = repository.findTransactionsByCollectivityIdAndDateRange(id, from, to);
+
+        return transactions.stream()
+                .map(mapper::toTransactionResponse)
+                .toList();
     }
 
-    public List<MembershipFee> getMembershipFees(String collectivityId) {
-        return feeRepository.findByCollectivityId(collectivityId);
+    public CollectivityFinancialAccountResponse getFinancialAccounts(String collectivityId, Instant at) {
+        Collectivity collectivity = repository.findById(collectivityId);
+        if (collectivity == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Collectivity not found with id: " + collectivityId);
+        }
+
+        Map<String, Account> accounts = repository.loadAccountsWithTransactions(collectivityId, at);
+
+        Double totalAmount = accounts.values().stream()
+                .mapToDouble(Account::getBalance)
+                .sum();
+
+        List<Object> accountDetails = new ArrayList<>();
+        for (Account account : accounts.values()) {
+            Object detail = mapper.toAccountDetail(account);
+            if (detail != null) {
+                accountDetails.add(detail);
+            }
+        }
+
+        return CollectivityFinancialAccountResponse.builder()
+                .id(collectivityId)
+                .amount(totalAmount)
+                .accounts(accountDetails)
+                .build();
+    }
+
+    public List<MembershipFeeResponse> getMembershipFees(String collectivityId) {
+        Collectivity collectivity = repository.findById(collectivityId);
+        if (collectivity == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Collectivity not found with id: " + collectivityId);
+        }
+
+        List<CotisationPlan> plans = cotisationPlanRepository.findByCollectivityId(collectivityId);
+
+        return plans.stream()
+                .map(plan -> MembershipFeeResponse.builder()
+                        .id(plan.getId())
+                        .eligibleFrom(plan.getEligibleFrom())
+                        .frequency(plan.getFrequency())
+                        .amount(plan.getAmount())
+                        .label(plan.getLabel())
+                        .status(plan.getStatus())
+                        .build())
+                .toList();
+    }
+
+    public List<MembershipFeeResponse> createMembershipFees(String collectivityId,
+                                                            List<CreateMembershipFee> createMembershipFees) {
+        Collectivity collectivity = repository.findById(collectivityId);
+        if (collectivity == null) {
+            throw new NotFoundException("Collectivity not found with id: " + collectivityId);
+        }
+
+        List<MembershipFeeResponse> responses = new ArrayList<>();
+
+        for (CreateMembershipFee createFee : createMembershipFees) {
+            if (createFee.getFrequency() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Frequency is required");
+            }
+            if (createFee.getAmount() == null || createFee.getAmount() < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Amount must be greater than or equal to 0");
+            }
+
+            CotisationPlan plan = CotisationPlan.builder()
+                    .eligibleFrom(createFee.getEligibleFrom())
+                    .frequency(createFee.getFrequency())
+                    .amount(createFee.getAmount())
+                    .label(createFee.getLabel())
+                    .build();
+
+            CotisationPlan saved = cotisationPlanRepository.save(plan, collectivityId);
+
+            responses.add(MembershipFeeResponse.builder()
+                    .id(saved.getId())
+                    .eligibleFrom(saved.getEligibleFrom())
+                    .frequency(saved.getFrequency())
+                    .amount(saved.getAmount())
+                    .label(saved.getLabel())
+                    .status(saved.getStatus())
+                    .build());
+        }
+
+        return responses;
     }
 }
