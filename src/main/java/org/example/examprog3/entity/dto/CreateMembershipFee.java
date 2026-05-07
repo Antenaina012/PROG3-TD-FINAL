@@ -1,10 +1,10 @@
 package org.example.examprog3.entity.dto;
 
-import com.Prog3.AgricultureCollectivity.entity.enums.Frequency;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.examprog3.entity.enums.Frequency;
 
 import java.time.LocalDate;
 

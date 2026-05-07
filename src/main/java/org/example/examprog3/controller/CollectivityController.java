@@ -1,6 +1,13 @@
 package org.example.examprog3.controller;
 
 import lombok.AllArgsConstructor;
+import org.example.examprog3.entity.Collectivity;
+import org.example.examprog3.entity.dto.*;
+import org.example.examprog3.exception.BadRequestException;
+import org.example.examprog3.exception.NotFoundException;
+import org.example.examprog3.service.ActivityService;
+import org.example.examprog3.service.CollectivityService;
+import org.example.examprog3.service.StatisticsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

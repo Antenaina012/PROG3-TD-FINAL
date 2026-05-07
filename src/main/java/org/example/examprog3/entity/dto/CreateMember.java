@@ -1,11 +1,11 @@
 package org.example.examprog3.entity.dto;
 
-import com.Prog3.AgricultureCollectivity.entity.enums.Gender;
-import com.Prog3.AgricultureCollectivity.entity.enums.MemberOccupation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.examprog3.entity.enums.Gender;
+import org.example.examprog3.entity.enums.MemberOccupation;
 
 import java.time.LocalDate;
 import java.util.List;
