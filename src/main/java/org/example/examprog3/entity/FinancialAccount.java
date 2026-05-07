@@ -1,11 +1,16 @@
 package org.example.examprog3.entity;
 
-import lombok.*;
+import java.math.BigDecimal;
+
 import org.example.examprog3.entity.enums.Bank;
 import org.example.examprog3.entity.enums.MobileBankingService;
 import org.example.examprog3.entity.enums.PaymentMode;
 
-import java.math.BigDecimal;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -25,6 +30,6 @@ public class FinancialAccount {
     private String holderName;
     private Integer bankCode;
     private Integer bankBranchCode;
-    private Integer bankAccountNumber;
+    private String bankAccountNumber; // Doit être String selon la spec (23 chiffres)
     private Integer bankAccountKey;
 }

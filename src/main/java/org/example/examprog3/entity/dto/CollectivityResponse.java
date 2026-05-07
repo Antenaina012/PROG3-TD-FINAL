@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.example.examprog3.entity.Member;
-import org.example.examprog3.entity.Structure;
 
 import java.util.List;
 
@@ -15,7 +13,9 @@ import java.util.List;
 @AllArgsConstructor
 public class CollectivityResponse {
     private String id;
+    private String number;
+    private String name;
     private String location;
-    private Structure structure;
-    private List<Member> members;
+    private CollectivityStructureResponse structure;
+    private List<MemberResponse> members;
 }

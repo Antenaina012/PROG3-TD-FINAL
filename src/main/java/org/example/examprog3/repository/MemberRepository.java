@@ -1,180 +1,242 @@
 package org.example.examprog3.repository;
 
 import lombok.AllArgsConstructor;
-import org.example.examprog3.entity.Collectivity;
 import org.example.examprog3.entity.Member;
-import org.example.examprog3.entity.MemberCollectivity;
-import org.example.examprog3.entity.dto.CreateMember;
-import org.example.examprog3.entity.enums.CollectivityOccupation;
 import org.example.examprog3.entity.enums.Gender;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
-import java.sql.Date;
-import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 @AllArgsConstructor
 public class MemberRepository {
-
     private final Connection connection;
+
+    public Member save(Member member) {
+        String insertSql = """
+            INSERT INTO member (id, first_name, last_name, birth_date, gender, address, 
+                              profession, phone_number, email, enrolment_date, is_superuser)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+            ON CONFLICT (id) DO UPDATE SET
+                first_name = EXCLUDED.first_name,
+                last_name = EXCLUDED.last_name,
+                birth_date = EXCLUDED.birth_date,
+                gender = EXCLUDED.gender,
+                address = EXCLUDED.address,
+                profession = EXCLUDED.profession,
+                phone_number = EXCLUDED.phone_number,
+                email = EXCLUDED.email,
+                is_superuser = EXCLUDED.is_superuser
+        """;
+
+        try (PreparedStatement stmt = connection.prepareStatement(insertSql)) {
+            String id = member.getId() != null ? member.getId() : "M" + System.currentTimeMillis();
+            stmt.setString(1, id);
+            stmt.setString(2, member.getFirstName());
+            stmt.setString(3, member.getLastName());
+            stmt.setDate(4, Date.valueOf(member.getBirthDate()));
+            stmt.setString(5, member.getGender().name());
+            stmt.setString(6, member.getAddress());
+            stmt.setString(7, member.getProfession());
+            stmt.setString(8, member.getPhoneNumber());
+            stmt.setString(9, member.getEmail());
+            stmt.setBoolean(10, member.isSuperuser());
+            stmt.executeUpdate();
+            member.setId(id);
+            return member;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save member", e);
+        }
+    }
+
+    public List<Member> saveAll(List<Member> members) {
+        List<Member> savedMembers = new ArrayList<>();
+        for (Member member : members) {
+            savedMembers.add(save(member));
+        }
+        return savedMembers;
+    }
+
+    public Optional<Member> findById(String id) {
+        String sql = """
+            SELECT id, first_name, last_name, birth_date, gender, address, 
+                   profession, phone_number, email, enrolment_date, is_superuser
+            FROM member WHERE id = ?
+        """;
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, id);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                Member member = mapMember(rs);
+                loadRefereesForMember(member);
+                return Optional.of(member);
+            }
+            return Optional.empty();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find member", e);
+        }
+    }
 
     public List<Member> findByIds(List<String> ids) {
         if (ids == null || ids.isEmpty()) return new ArrayList<>();
 
-        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        String placeholders = ids.stream().map(id -> "?").collect(Collectors.joining(","));
+        String sql = String.format("""
+            SELECT id, first_name, last_name, birth_date, gender, address, 
+                   profession, phone_number, email, enrolment_date, is_superuser
+            FROM member WHERE id IN (%s)
+        """, placeholders);
 
-        // Mise à jour : table 'membership' et colonnes id_... -> ..._id
-        String sql = """
-        SELECT
-            m.id AS m_id, m.first_name, m.last_name, m.birth_date, m.enrolment_date,
-            m.address, m.email, m.phone_number, m.profession, m.gender,
-            ms.role AS occupation, ms.begin_date AS start_date, ms.end_date,
-            c.id AS c_id, c.name, c.unique_number AS number, c.speciality, c.location
-        FROM member m
-        LEFT JOIN membership ms ON m.id = ms.member_id
-        LEFT JOIN collectivity c ON ms.collectivity_id = c.id
-        WHERE m.id IN (%s)
-        """.formatted(placeholders);
-
+        List<Member> members = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             for (int i = 0; i < ids.size(); i++) {
                 stmt.setString(i + 1, ids.get(i));
             }
-
             ResultSet rs = stmt.executeQuery();
-            Map<String, Member> map = new LinkedHashMap<>(); // LinkedHashMap pour garder l'ordre du PDF
-
             while (rs.next()) {
-                String id = rs.getString("m_id");
-                Member member = map.computeIfAbsent(id, k -> {
-                    try { return mapBasicMember(rs); }
-                    catch (SQLException e) { throw new RuntimeException(e); }
-                });
-
-                if (rs.getString("c_id") != null) {
-                    member.getMemberCollectivities().add(mapMemberCollectivity(rs, member));
-                }
+                members.add(mapMember(rs));
             }
-            return new ArrayList<>(map.values());
-        } catch (SQLException e) { throw new RuntimeException(e); }
+
+            // Load referees for all members
+            for (Member member : members) {
+                loadRefereesForMember(member);
+            }
+
+            return members;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find members", e);
+        }
     }
 
-    public List<Member> saveAll(List<Member> members, List<CreateMember> dtos) {
-        // Ajout des colonnes de paiement pour éviter les erreurs 500
-        String insertMemberSql = """
-        INSERT INTO member(id, first_name, last_name, birth_date, gender, enrolment_date, address, email, phone_number, profession)
-        VALUES (?, ?, ?, ?, ?::gender_type, ?, ?, ?, ?, ?)
-        """;
-
-        String insertMsSql = """
-        INSERT INTO membership(member_id, collectivity_id, role, begin_date)
-        VALUES (?, ?, ?::role_type, ?)
-        """;
-
-        String insertRefSql = """
-        INSERT INTO referee(sponsor_id, sponsored_id)
-        VALUES (?, ?)
-        """;
-
-        try {
-            connection.setAutoCommit(false);
-            try (PreparedStatement memberStmt = connection.prepareStatement(insertMemberSql);
-                 PreparedStatement msStmt = connection.prepareStatement(insertMsSql);
-                 PreparedStatement refStmt = connection.prepareStatement(insertRefSql)) {
-
-                for (int i = 0; i < members.size(); i++) {
-                    Member member = members.get(i);
-                    CreateMember dto = dtos.get(i);
-
-                    // 1. Insertion Membre
-                    memberStmt.setString(1, member.getId());
-                    memberStmt.setString(2, member.getFirstName());
-                    memberStmt.setString(3, member.getLastName());
-                    memberStmt.setDate(4, Date.valueOf(member.getBirthDate()));
-                    memberStmt.setString(5, member.getGender().name());
-                    // On utilise la date d'enrôlement du DTO pour les tests de parrainage
-                    memberStmt.setTimestamp(6, Timestamp.from(member.getEnrolmentDate() != null ? member.getEnrolmentDate() : Instant.now()));
-                    memberStmt.setString(7, member.getAddress());
-                    memberStmt.setString(8, member.getEmail());
-                    memberStmt.setString(9, member.getPhoneNumber());
-                    memberStmt.setString(10, member.getProfession());
-                    memberStmt.executeUpdate();
-
-                    // 2. Liaison Collectivité (Membership)
-                    msStmt.setString(1, member.getId());
-                    msStmt.setString(2, dto.getCollectivityIdentifier());
-                    msStmt.setString(3, dto.getOccupation() != null ? dto.getOccupation().name() : "JUNIOR");
-                    msStmt.setTimestamp(4, Timestamp.from(Instant.now()));
-                    msStmt.executeUpdate();
-
-                    // 3. Parrainages (Referees)
-                    if (dto.getReferees() != null) {
-                        for (String sponsorId : dto.getReferees()) {
-                            refStmt.setString(1, sponsorId);
-                            refStmt.setString(2, member.getId());
-                            refStmt.addBatch();
-                        }
-                        refStmt.executeBatch();
-                    }
-                }
-                connection.commit();
-                return members;
-            } catch (Exception e) {
-                connection.rollback();
-                throw new RuntimeException("Save members failed: " + e.getMessage(), e);
-            } finally {
-                connection.setAutoCommit(true);
-            }
-        } catch (SQLException e) { throw new RuntimeException(e); }
-    }
-
-    private Member mapBasicMember(ResultSet rs) throws SQLException {
+    private Member mapMember(ResultSet rs) throws SQLException {
         return Member.builder()
-                .id(rs.getString("m_id"))
+                .id(rs.getString("id"))
                 .firstName(rs.getString("first_name"))
                 .lastName(rs.getString("last_name"))
                 .birthDate(rs.getDate("birth_date").toLocalDate())
-                .enrolmentDate(rs.getTimestamp("enrolment_date").toInstant())
-                .address(rs.getString("address"))
-                .email(rs.getString("email"))
-                .phoneNumber(rs.getString("phone_number"))
-                .profession(rs.getString("profession"))
                 .gender(Gender.valueOf(rs.getString("gender")))
-                .memberCollectivities(new ArrayList<>())
+                .address(rs.getString("address"))
+                .profession(rs.getString("profession"))
+                 .phoneNumber(rs.getString("phone_number"))
+                .email(rs.getString("email"))
+                .enrolmentDate(rs.getDate("enrolment_date").toLocalDate() != null ?
+                        rs.getDate("enrolment_date").toLocalDate() : null)
+                .isSuperuser(rs.getBoolean("is_superuser"))
+                .referees(new ArrayList<>())
                 .build();
     }
 
-    private MemberCollectivity mapMemberCollectivity(ResultSet rs, Member member) throws SQLException {
-        Collectivity c = Collectivity.builder()
-                .id(rs.getString("c_id"))
-                .name(rs.getString("name"))
-                .number(rs.getString("number"))
-                .location(rs.getString("location"))
-                .build();
+    private void loadRefereesForMember(Member member) {
+        String sql = """
+            SELECT m.id, m.first_name, m.last_name, m.birth_date, m.gender, m.address,
+                   m.profession, m.phone_number, m.email, m.enrolment_date, m.is_superuser,
+                   mr.relationship
+            FROM member_referee mr
+            JOIN member m ON mr.id_referee = m.id
+            WHERE mr.id_candidate = ?
+        """;
 
-        return MemberCollectivity.builder()
-                .startDate(rs.getTimestamp("start_date").toInstant())
-                .endDate(rs.getTimestamp("end_date") != null ? rs.getTimestamp("end_date").toInstant() : null)
-                .occupation(CollectivityOccupation.valueOf(rs.getString("occupation")))
-                .member(member)
-                .collectivity(c)
-                .build();
-    }
-    public boolean existsById(String id) {
-        String sql = "SELECT COUNT(*) FROM member WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, id); // Utilisation directe du String (ex: C1-M1)
+            stmt.setString(1, member.getId());
+            ResultSet rs = stmt.executeQuery();
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
+            List<Member> referees = new ArrayList<>();
+            while (rs.next()) {
+                referees.add(mapMember(rs));
             }
+            member.setReferees(referees);
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la vérification de l'existence du membre : " + id, e);
+            throw new RuntimeException("Failed to load referees for member: " + member.getId(), e);
         }
-        return false;
+    }
+
+    public boolean existsById(String id) {
+        String sql = "SELECT COUNT(id) FROM member WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, id);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt(1) > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to check member existence", e);
+        }
+    }
+
+    public void addReferee(String candidateId, String refereeId, String relationship) {
+        String sql = """
+            INSERT INTO member_referee (id_candidate, id_referee, relationship) 
+            VALUES (?, ?, ?)
+            ON CONFLICT (id_candidate, id_referee) DO NOTHING
+        """;
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, candidateId);
+            stmt.setString(2, refereeId);
+            stmt.setString(3, relationship != null ? relationship : "Parrainage");
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to add referee", e);
+        }
+    }
+
+    public void addToCollectivity(String memberId, String collectivityId, String occupation) {
+        String sql = """
+            INSERT INTO member_collectivity (id_member, id_collectivity, occupation, start_date)
+            VALUES (?, ?, ?, NOW())
+            ON CONFLICT (id_member, id_collectivity, start_date) DO NOTHING
+        """;
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, memberId);
+            stmt.setString(2, collectivityId);
+            stmt.setString(3, occupation);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to add member to collectivity", e);
+        }
+    }
+
+    public List<String> findCollectivityIdsByMemberId(String memberId) {
+        String sql = """
+            SELECT DISTINCT id_collectivity 
+            FROM member_collectivity 
+            WHERE id_member = ? AND end_date IS NULL
+        """;
+
+        List<String> collectivityIds = new ArrayList<>();
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, memberId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                collectivityIds.add(rs.getString("id_collectivity"));
+            }
+            return collectivityIds;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find collectivity ids for member", e);
+        }
+    }
+
+    public String findCollectivityIdByMemberId(String memberId) {
+        String sql = """
+            SELECT id_collectivity 
+            FROM member_collectivity 
+            WHERE id_member = ? AND end_date IS NULL
+            LIMIT 1
+        """;
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, memberId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("id_collectivity");
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find collectivity id for member", e);
+        }
     }
 }
