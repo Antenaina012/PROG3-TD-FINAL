@@ -85,9 +85,6 @@ public class MemberValidator {
             }
         }
 
-        // Per spec: number of referees from target collectivity must be >= number of referees from other collectivities
-        // For the referee check, we need at least 2 referees total, and the number from target
-        // must be >= the number from other collectivities
         if (inTargetCollectivity < inOtherCollectivities) {
             throw new InsufficientSponsorCount(
                     String.format("%s %s does not satisfy collectivity sponsor rule. " +
