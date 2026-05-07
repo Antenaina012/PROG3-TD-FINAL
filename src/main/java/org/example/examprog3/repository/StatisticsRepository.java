@@ -1,10 +1,10 @@
 package org.example.examprog3.repository;
 
-import com.Prog3.AgricultureCollectivity.entity.dto.CollectivityInformation;
-import com.Prog3.AgricultureCollectivity.entity.dto.CollectivityLocalStatistics;
-import com.Prog3.AgricultureCollectivity.entity.dto.CollectivityOverallStatistics;
-import com.Prog3.AgricultureCollectivity.entity.dto.MemberDescription;
 import lombok.AllArgsConstructor;
+import org.example.examprog3.entity.dto.CollectivityInformation;
+import org.example.examprog3.entity.dto.CollectivityLocalStatistics;
+import org.example.examprog3.entity.dto.CollectivityOverallStatistics;
+import org.example.examprog3.entity.dto.MemberDescription;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;

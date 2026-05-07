@@ -1,12 +1,12 @@
 package org.example.examprog3.repository;
 
-import com.Prog3.AgricultureCollectivity.entity.Activity;
-import com.Prog3.AgricultureCollectivity.entity.ActivityAttendance;
-import com.Prog3.AgricultureCollectivity.entity.Member;
-import com.Prog3.AgricultureCollectivity.entity.enums.ActivityType;
-import com.Prog3.AgricultureCollectivity.entity.enums.AttendanceStatus;
-import com.Prog3.AgricultureCollectivity.entity.enums.Gender;
 import lombok.AllArgsConstructor;
+import org.example.examprog3.entity.Activity;
+import org.example.examprog3.entity.ActivityAttendance;
+import org.example.examprog3.entity.Member;
+import org.example.examprog3.entity.enums.ActivityType;
+import org.example.examprog3.entity.enums.AttendanceStatus;
+import org.example.examprog3.entity.enums.Gender;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;

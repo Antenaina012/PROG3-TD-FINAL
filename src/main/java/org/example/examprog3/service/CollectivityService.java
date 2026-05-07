@@ -1,13 +1,16 @@
 package org.example.examprog3.service;
 
-import com.Prog3.AgricultureCollectivity.entity.*;
-import com.Prog3.AgricultureCollectivity.entity.dto.*;
-import com.Prog3.AgricultureCollectivity.exception.NotFoundException;
-import com.Prog3.AgricultureCollectivity.mapper.Mapper;
-import com.Prog3.AgricultureCollectivity.repository.CollectivityRepository;
-import com.Prog3.AgricultureCollectivity.repository.CotisationPlanRepository;
-import com.Prog3.AgricultureCollectivity.validator.CollectivityValidator;
 import lombok.AllArgsConstructor;
+import org.example.examprog3.entity.Account;
+import org.example.examprog3.entity.Collectivity;
+import org.example.examprog3.entity.CotisationPlan;
+import org.example.examprog3.entity.Transaction;
+import org.example.examprog3.entity.dto.*;
+import org.example.examprog3.exception.NotFoundException;
+import org.example.examprog3.mapper.Mapper;
+import org.example.examprog3.repository.CollectivityRepository;
+import org.example.examprog3.repository.CotisationPlanRepository;
+import org.example.examprog3.validator.CollectivityValidator;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;

@@ -1,10 +1,10 @@
 package org.example.examprog3.entity;
 
-import com.Prog3.AgricultureCollectivity.entity.enums.ActivityType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.examprog3.entity.enums.ActivityType;
 
 import java.time.LocalDate;
 import java.util.List;

@@ -1,9 +1,9 @@
 package org.example.examprog3.repository;
 
-import com.Prog3.AgricultureCollectivity.entity.CotisationPlan;
-import com.Prog3.AgricultureCollectivity.entity.enums.ActivityStatus;
-import com.Prog3.AgricultureCollectivity.entity.enums.Frequency;
 import lombok.AllArgsConstructor;
+import org.example.examprog3.entity.CotisationPlan;
+import org.example.examprog3.entity.enums.ActivityStatus;
+import org.example.examprog3.entity.enums.Frequency;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;

@@ -1,16 +1,16 @@
 package org.example.examprog3.service;
 
-import com.Prog3.AgricultureCollectivity.entity.Activity;
-import com.Prog3.AgricultureCollectivity.entity.ActivityAttendance;
-import com.Prog3.AgricultureCollectivity.entity.Member;
-import com.Prog3.AgricultureCollectivity.entity.dto.*;
-import com.Prog3.AgricultureCollectivity.entity.enums.MemberOccupation;
-import com.Prog3.AgricultureCollectivity.exception.NotFoundException;
-import com.Prog3.AgricultureCollectivity.mapper.Mapper;
-import com.Prog3.AgricultureCollectivity.repository.ActivityRepository;
-import com.Prog3.AgricultureCollectivity.repository.CollectivityRepository;
-import com.Prog3.AgricultureCollectivity.repository.MemberRepository;
 import lombok.AllArgsConstructor;
+import org.apache.catalina.mapper.Mapper;
+import org.example.examprog3.entity.Activity;
+import org.example.examprog3.entity.ActivityAttendance;
+import org.example.examprog3.entity.Member;
+import org.example.examprog3.entity.dto.*;
+import org.example.examprog3.entity.enums.MemberOccupation;
+import org.example.examprog3.exception.NotFoundException;
+import org.example.examprog3.repository.ActivityRepository;
+import org.example.examprog3.repository.CollectivityRepository;
+import org.example.examprog3.repository.MemberRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;

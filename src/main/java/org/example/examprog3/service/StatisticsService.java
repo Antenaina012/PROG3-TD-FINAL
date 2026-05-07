@@ -1,12 +1,12 @@
 package org.example.examprog3.service;
 
-import com.Prog3.AgricultureCollectivity.entity.dto.CollectivityLocalStatistics;
-import com.Prog3.AgricultureCollectivity.entity.dto.CollectivityOverallStatistics;
-import com.Prog3.AgricultureCollectivity.exception.BadRequestException;
-import com.Prog3.AgricultureCollectivity.exception.NotFoundException;
-import com.Prog3.AgricultureCollectivity.repository.CollectivityRepository;
-import com.Prog3.AgricultureCollectivity.repository.StatisticsRepository;
 import lombok.AllArgsConstructor;
+import org.example.examprog3.entity.dto.CollectivityLocalStatistics;
+import org.example.examprog3.entity.dto.CollectivityOverallStatistics;
+import org.example.examprog3.exception.BadRequestException;
+import org.example.examprog3.exception.NotFoundException;
+import org.example.examprog3.repository.CollectivityRepository;
+import org.example.examprog3.repository.StatisticsRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;

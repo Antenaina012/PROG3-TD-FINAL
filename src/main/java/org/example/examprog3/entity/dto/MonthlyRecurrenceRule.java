@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MonthlyRecurrenceRule {
     private Integer weekOrdinal; // 1-5
-    private String dayOfWeek; // MO, TU, WE, TH, FR, SA, SU
+    private String dayOfWeek; // MO...
 }

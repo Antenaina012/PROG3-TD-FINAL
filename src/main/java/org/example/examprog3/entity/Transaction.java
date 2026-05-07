@@ -1,11 +1,11 @@
 package org.example.examprog3.entity;
 
-import com.Prog3.AgricultureCollectivity.entity.enums.PaymentMode;
-import com.Prog3.AgricultureCollectivity.entity.enums.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.examprog3.entity.enums.PaymentMode;
+import org.example.examprog3.entity.enums.TransactionType;
 
 import java.time.LocalDate;
 

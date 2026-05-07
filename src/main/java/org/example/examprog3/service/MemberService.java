@@ -1,13 +1,17 @@
 package org.example.examprog3.service;
 
-import com.Prog3.AgricultureCollectivity.entity.*;
-import com.Prog3.AgricultureCollectivity.entity.dto.*;
-import com.Prog3.AgricultureCollectivity.entity.enums.PaymentMode;
-import com.Prog3.AgricultureCollectivity.entity.enums.TransactionType;
-import com.Prog3.AgricultureCollectivity.mapper.Mapper;
-import com.Prog3.AgricultureCollectivity.repository.*;
-import com.Prog3.AgricultureCollectivity.validator.MemberValidator;
 import lombok.AllArgsConstructor;
+
+import org.example.examprog3.entity.*;
+import org.example.examprog3.entity.dto.CreateMember;
+import org.example.examprog3.entity.dto.CreateMemberPayment;
+import org.example.examprog3.entity.dto.MemberPaymentResponse;
+import org.example.examprog3.entity.dto.MemberResponse;
+import org.example.examprog3.entity.enums.PaymentMode;
+import org.example.examprog3.entity.enums.TransactionType;
+import org.example.examprog3.mapper.Mapper;
+import org.example.examprog3.repository.*;
+import org.example.examprog3.validator.MemberValidator;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;

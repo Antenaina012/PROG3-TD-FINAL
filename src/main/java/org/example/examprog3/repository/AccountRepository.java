@@ -1,7 +1,7 @@
 package org.example.examprog3.repository;
 
-import com.Prog3.AgricultureCollectivity.entity.Account;
 import lombok.AllArgsConstructor;
+import org.example.examprog3.entity.Account;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Connection;

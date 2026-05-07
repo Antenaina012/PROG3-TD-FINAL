@@ -1,12 +1,12 @@
-package com.Prog3.AgricultureCollectivity.validator;
+package org.example.examprog3.validator;
 
-import com.Prog3.AgricultureCollectivity.entity.Member;
-import com.Prog3.AgricultureCollectivity.entity.dto.CreateMember;
-import com.Prog3.AgricultureCollectivity.exception.BadRequestException;
-import com.Prog3.AgricultureCollectivity.exception.InsufficientSponsorCount;
-import com.Prog3.AgricultureCollectivity.exception.NotFoundException;
-import com.Prog3.AgricultureCollectivity.repository.MemberRepository;
 import lombok.AllArgsConstructor;
+import org.example.examprog3.entity.Member;
+import org.example.examprog3.entity.dto.CreateMember;
+import org.example.examprog3.exception.BadRequestException;
+import org.example.examprog3.exception.InsufficientSponsorCount;
+import org.example.examprog3.exception.NotFoundException;
+import org.example.examprog3.repository.MemberRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

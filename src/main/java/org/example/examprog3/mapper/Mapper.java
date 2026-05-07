@@ -1,7 +1,7 @@
-package com.Prog3.AgricultureCollectivity.mapper;
+package org.example.examprog3.mapper;
 
-import com.Prog3.AgricultureCollectivity.entity.*;
-import com.Prog3.AgricultureCollectivity.entity.dto.*;
+import org.example.examprog3.entity.*;
+import org.example.examprog3.entity.dto.*;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

@@ -1,12 +1,12 @@
-package com.Prog3.AgricultureCollectivity.validator;
+package org.example.examprog3.validator;
 
-import com.Prog3.AgricultureCollectivity.entity.Member;
-import com.Prog3.AgricultureCollectivity.entity.dto.CreateCollectivity;
-import com.Prog3.AgricultureCollectivity.entity.dto.CreateCollectivityStructure;
-import com.Prog3.AgricultureCollectivity.exception.BadRequestException;
-import com.Prog3.AgricultureCollectivity.exception.NotFoundException;
-import com.Prog3.AgricultureCollectivity.repository.MemberRepository;
 import lombok.AllArgsConstructor;
+import org.example.examprog3.entity.Member;
+import org.example.examprog3.entity.dto.CreateCollectivity;
+import org.example.examprog3.entity.dto.CreateCollectivityStructure;
+import org.example.examprog3.exception.BadRequestException;
+import org.example.examprog3.exception.NotFoundException;
+import org.example.examprog3.repository.MemberRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
