@@ -1,18 +1,18 @@
 package org.example.examprog3.controller;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.apache.coyote.BadRequestException;
-import org.example.examprog3.Service.CollectivityService;
 import org.example.examprog3.entity.Collectivity;
-import org.example.examprog3.entity.dto.CollectivityResponse;
-import org.example.examprog3.entity.dto.CreateCollectivity;
-import org.example.examprog3.exeption.NotFoundException;
+import org.example.examprog3.entity.dto.*;
+import org.example.examprog3.exception.BadRequestException;
+import org.example.examprog3.exception.NotFoundException;
+import org.example.examprog3.service.ActivityService;
+import org.example.examprog3.service.CollectivityService;
+import org.example.examprog3.service.StatisticsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -20,17 +20,121 @@ import java.util.List;
 @RequestMapping("/collectivities")
 public class CollectivityController {
     private final CollectivityService service;
+    private final StatisticsService statisticsService;
+    private final ActivityService activityService;
+
+    // Endpoints
 
     @PostMapping
-    public ResponseEntity<?> createCollectivities(@RequestBody(required = false) List<CreateCollectivity> createCollectivities){
-        try{
-            if(createCollectivities == null){
+    public ResponseEntity<?> createCollectivities(@RequestBody(required = false) List<CreateCollectivity> createCollectivities) {
+        try {
+            if (createCollectivities == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mandatory body not provided");
             }
             List<CollectivityResponse> collectivities = service.createCollectivities(createCollectivities);
             return ResponseEntity.status(HttpStatus.CREATED).body(collectivities);
-        }catch (BadRequestException e) {
+        } catch (BadRequestException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getCollectivity(@PathVariable String id) {
+        try {
+            Collectivity collectivity = service.getCollectivityById(id);
+            return ResponseEntity.status(HttpStatus.OK).body(collectivity);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/membershipFees")
+    public ResponseEntity<?> getMembershipFees(@PathVariable String id) {
+        try {
+            List<MembershipFeeResponse> membershipFees = service.getMembershipFees(id);
+            return ResponseEntity.ok(membershipFees);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{id}/membershipFees")
+    public ResponseEntity<?> createMembershipFees(@PathVariable String id,
+                                                  @RequestBody(required = false) List<CreateMembershipFee> createMembershipFees) {
+        try {
+            if (createMembershipFees == null || createMembershipFees.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Request body is required");
+            }
+            List<MembershipFeeResponse> membershipFees = service.createMembershipFees(id, createMembershipFees);
+            return ResponseEntity.status(HttpStatus.CREATED).body(membershipFees);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/informations")
+    public ResponseEntity<?> assignInformations(@PathVariable String id,
+                                                @RequestBody(required = false) CollectivityInformation collectivityInformation) {
+        try {
+            if (collectivityInformation == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mandatory body not provided");
+            }
+            CollectivityResponse response = service.assignIdentity(id, collectivityInformation);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<?> getCollectivityTransactions(
+            @PathVariable String id,
+            @RequestParam(required = true) String from,
+            @RequestParam(required = true) String to) {
+        try {
+            Instant fromDate = Instant.parse(from + "T00:00:00Z");
+            Instant toDate = Instant.parse(to + "T23:59:59Z");
+
+            List<CollectivityTransactionResponse> transactions =
+                    service.getCollectivityTransactions(id, fromDate, toDate);
+            return ResponseEntity.status(HttpStatus.OK).body(transactions);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/financialAccounts")
+    public ResponseEntity<?> getFinancialAccounts(
+            @PathVariable String id,
+            @RequestParam(required = false) String at) {
+        try {
+            Instant atDate = at != null ? Instant.parse(at + "T23:59:59Z") : null;
+            CollectivityFinancialAccountResponse accounts = service.getFinancialAccounts(id, atDate);
+            return ResponseEntity.ok(accounts);
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
@@ -39,36 +143,115 @@ public class CollectivityController {
         }
     }
 
-
-    @PatchMapping("/{id}/identity")
-    public ResponseEntity<?> updateIdentity(
-            @PathVariable Integer id,
-            @RequestBody IdentityRequest request) {
+    @GetMapping("/{id}/statistics")
+    public ResponseEntity<?> getLocalStatistics(
+            @PathVariable String id,
+            @RequestParam(required = true) String from,
+            @RequestParam(required = true) String to) {
         try {
-            Collectivity updated = service.assignIdentity(id, request.getNumber(), request.getName());
-            return ResponseEntity.ok(updated);
+            Instant fromDate = Instant.parse(from + "T00:00:00Z");
+            Instant toDate = Instant.parse(to + "T23:59:59Z");
 
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-
-        } catch (IllegalArgumentException e) {
+            List<CollectivityLocalStatistics> statistics =
+                    statisticsService.getLocalStatistics(id, fromDate, toDate);
+            return ResponseEntity.status(HttpStatus.OK).body(statistics);
+        } catch (BadRequestException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erreur lors de l'attribution : " + e.getMessage());
+                    .body("An unexpected error occurred: " + e.getMessage());
         }
     }
 
+    @GetMapping("/statistics")
+    public ResponseEntity<?> getOverallStatistics(
+            @RequestParam(required = true) String from,
+            @RequestParam(required = true) String to) {
+        try {
+            Instant fromDate = Instant.parse(from + "T00:00:00Z");
+            Instant toDate = Instant.parse(to + "T23:59:59Z");
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class IdentityRequest {
-        private String number;
-        private String name;
+            List<CollectivityOverallStatistics> statistics =
+                    statisticsService.getOverallStatistics(fromDate, toDate);
+            return ResponseEntity.status(HttpStatus.OK).body(statistics);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{id}/activities")
+    public ResponseEntity<?> createActivities(
+            @PathVariable String id,
+            @RequestBody(required = false) List<CreateCollectivityActivity> createActivities) {
+        try {
+            if (createActivities == null || createActivities.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Request body is required");
+            }
+            List<CollectivityActivity> activities = activityService.createActivities(id, createActivities);
+            return ResponseEntity.status(HttpStatus.CREATED).body(activities);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/activities")
+    public ResponseEntity<?> getActivities(@PathVariable String id) {
+        try {
+            List<CollectivityActivity> activities = activityService.getActivities(id);
+            return ResponseEntity.ok(activities);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{id}/activities/{activityId}/attendance")
+    public ResponseEntity<?> createAttendance(
+            @PathVariable String id,
+            @PathVariable String activityId,
+            @RequestBody(required = false) List<CreateActivityMemberAttendance> attendances) {
+        try {
+            if (attendances == null || attendances.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Request body is required");
+            }
+            List<ActivityMemberAttendance> createdAttendances =
+                    activityService.createAttendance(id, activityId, attendances);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdAttendances);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/activities/{activityId}/attendance")
+    public ResponseEntity<?> getAttendance(
+            @PathVariable String id,
+            @PathVariable String activityId) {
+        try {
+            List<ActivityMemberAttendance> attendances =
+                    activityService.getAttendance(id, activityId);
+            return ResponseEntity.ok(attendances);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
+        }
     }
 }

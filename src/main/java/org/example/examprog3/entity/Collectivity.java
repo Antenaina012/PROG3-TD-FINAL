@@ -5,20 +5,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Collectivity {
-    private Integer id;
+    private String id;
     private String number;
     private String name;
     private String speciality;
-    private java.util.Date creationDatetime;
+    private LocalDate creationDatetime;
     private boolean federationApproval;
-    private java.util.Date authorizationDate;
+    private LocalDate authorizationDate;
     private String location;
     private Structure structure;
     private List<Member> members;

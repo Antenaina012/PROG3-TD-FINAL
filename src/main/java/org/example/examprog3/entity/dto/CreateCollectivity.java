@@ -8,12 +8,13 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CreateCollectivity {
     private String location;
-    private List<Integer> memberIds;
+    private String speciality;
+    private List<String> members;
     private boolean federationApproval;
-    private CreateStructure structure;
+    private CreateCollectivityStructure structure;
 }
